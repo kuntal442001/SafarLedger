@@ -1,0 +1,115 @@
+{% extends "base.html" %}
+
+{% block title %}Travelers - {{ tour.tour_name }} - SafarLedger{% endblock %}
+
+{% block content %}
+
+<div class="container mt-5" style="max-width: 800px;">
+
+    <div class="d-flex justify-content-between align-items-start mb-4">
+        <div>
+            <h2 class="mb-1">🧑‍🤝‍🧑 Travelers</h2>
+            <p class="text-muted mb-0">For trip: {{ tour.tour_name }}</p>
+        </div>
+
+        <div class="d-flex gap-2">
+            <a href="{{ url_for('groups.list_groups', tour_id=tour.id) }}"
+               class="btn btn-outline-primary">
+                👥 Groups
+            </a>
+
+            <a href="{{ url_for('travelers.create', tour_id=tour.id) }}"
+               class="btn btn-primary">
+                + Add Traveler
+            </a>
+
+            <a href="{{ url_for('tours.detail', tour_id=tour.id) }}"
+               class="btn btn-outline-secondary">
+                Back to Trip
+            </a>
+        </div>
+    </div>
+
+    <div class="card shadow-sm">
+        <div class="card-body">
+            {% if travelers %}
+                <div class="table-responsive">
+                    <table class="table align-middle">
+                        <thead>
+                            <tr>
+                                <th>Name</th>
+                                <th class="text-end">Age</th>
+                                <th>Type</th>
+                                <th>Billing</th>
+                                <th>Group</th>
+                                <th class="text-end">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for traveler in travelers %}
+                                <tr>
+                                    <td>{{ traveler.name }}</td>
+                                    <td class="text-end">{{ traveler.age }}</td>
+                                    <td>
+                                        <span class="badge bg-secondary">{{ traveler.traveler_type }}</span>
+                                    </td>
+                                    <td>
+                                        {% if traveler.is_chargeable %}
+                                            <span class="text-success small">Pays for activities</span>
+                                        {% else %}
+                                            <span class="text-muted small">Free (under 10)</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if traveler.group %}
+                                            <span class="badge bg-primary">{{ traveler.group.name }}</span>
+                                        {% else %}
+                                            <span class="text-muted small">Unassigned</span>
+                                        {% endif %}
+                                    </td>
+                                    <td class="text-end">
+                                        <a href="{{ url_for('travelers.edit', traveler_id=traveler.id) }}"
+                                           class="btn btn-outline-primary btn-sm">
+                                            Edit
+                                        </a>
+
+                                        <form method="POST"
+                                              action="{{ url_for('travelers.delete', traveler_id=traveler.id) }}"
+                                              class="d-inline"
+                                              onsubmit="return confirm('Remove this traveler? This will also remove them from any expenses they were tagged on.');">
+                                            <button type="submit" class="btn btn-outline-danger btn-sm">
+                                                Remove
+                                            </button>
+                                        </form>
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+
+                {% if tour.number_of_people != travelers|length %}
+                    <div class="alert alert-warning small mb-0 mt-3">
+                        ⚠️ This trip is planned for {{ tour.number_of_people }} people,
+                        but {{ travelers|length }} traveler{{ "s" if travelers|length != 1 else "" }}
+                        {{ "are" if travelers|length != 1 else "is" }} logged here.
+                    </div>
+                {% endif %}
+            {% else %}
+                <div class="text-center py-4">
+                    <p class="text-muted mb-3">No travelers logged for this trip yet.</p>
+                    <p class="text-muted small mb-3">
+                        Add each traveler's name and age so expenses can be split per person —
+                        travelers under 10 are automatically excluded from billing.
+                    </p>
+                    <a href="{{ url_for('travelers.create', tour_id=tour.id) }}"
+                       class="btn btn-primary btn-sm">
+                        + Add Your First Traveler
+                    </a>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+
+</div>
+{% endblock %}

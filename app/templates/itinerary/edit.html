@@ -1,0 +1,87 @@
+{% extends "base.html" %}
+
+{% block title %}Edit Itinerary Activity - SafarLedger{% endblock %}
+
+{% block content %}
+
+<div class="container mt-5" style="max-width: 700px;">
+    <div class="card shadow-sm">
+        <div class="card-body p-4">
+            <h2 class="mb-1">✏️ Edit Itinerary Activity</h2>
+            <p class="text-muted mb-4">For trip: {{ tour.tour_name }}</p>
+
+            <form method="POST">
+                {{ form.hidden_tag() }}
+
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        {{ form.itinerary_date.label(class="form-label") }}
+                        {{ form.itinerary_date(class="form-control", type="date", min=tour.start_date.isoformat(), max=tour.end_date.isoformat()) }}
+                        {% for error in form.itinerary_date.errors %}
+                            <div class="text-danger small mt-1">{{ error }}</div>
+                        {% endfor %}
+                    </div>
+
+                    <div class="col-md-6 mb-3">
+                        {{ form.time.label(class="form-label") }}
+                        {{ form.time(class="form-control", type="time") }}
+                        {% for error in form.time.errors %}
+                            <div class="text-danger small mt-1">{{ error }}</div>
+                        {% endfor %}
+                    </div>
+                </div>
+
+                <div class="mb-3">
+                    {{ form.title.label(class="form-label") }}
+                    {{ form.title(class="form-control", placeholder="e.g. Visit Tiger Hill") }}
+                    {% for error in form.title.errors %}
+                        <div class="text-danger small mt-1">{{ error }}</div>
+                    {% endfor %}
+                </div>
+
+                <div class="mb-3">
+                    {{ form.location.label(class="form-label") }}
+                    {{ form.location(class="form-control", placeholder="e.g. Tiger Hill, Darjeeling") }}
+                    {% for error in form.location.errors %}
+                        <div class="text-danger small mt-1">{{ error }}</div>
+                    {% endfor %}
+                </div>
+
+                <div class="row">
+                    <div class="col-md-7 mb-3">
+                        {{ form.Id_Cat.label(class="form-label") }}
+                        {{ form.Id_Cat(class="form-select") }}
+                        {% for error in form.Id_Cat.errors %}
+                            <div class="text-danger small mt-1">{{ error }}</div>
+                        {% endfor %}
+                    </div>
+
+                    <div class="col-md-5 mb-3">
+                        {{ form.estimated_cost.label(class="form-label") }}
+                        {{ form.estimated_cost(class="form-control", min="0", step="0.01", placeholder="₹0.00") }}
+                        {% for error in form.estimated_cost.errors %}
+                            <div class="text-danger small mt-1">{{ error }}</div>
+                        {% endfor %}
+                    </div>
+                </div>
+
+                <div class="mb-4">
+                    {{ form.description.label(class="form-label") }}
+                    {{ form.description(class="form-control", rows="4", placeholder="Optional notes, instructions or reminders") }}
+                    {% for error in form.description.errors %}
+                        <div class="text-danger small mt-1">{{ error }}</div>
+                    {% endfor %}
+                </div>
+
+                <div class="d-flex gap-2">
+                    {{ form.submit(class="btn btn-primary", value="Update Activity") }}
+                    <a href="{{ url_for('itinerary.list_itinerary', tour_id=tour.id) }}"
+                       class="btn btn-outline-secondary">
+                        Cancel
+                    </a>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

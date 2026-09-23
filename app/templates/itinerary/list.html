@@ -1,0 +1,141 @@
+{% extends "base.html" %}
+
+{% block title %}{{ tour.tour_name }} Itinerary - SafarLedger{% endblock %}
+
+{% block content %}
+
+<div class="container mt-5" style="max-width: 1000px;">
+
+    <div class="d-flex justify-content-between align-items-start mb-4">
+        <div>
+            <h2 class="mb-1">🗺️ Trip Itinerary</h2>
+            <p class="text-muted mb-0">
+                {{ tour.tour_name }} · 📍 {{ tour.destination }}
+            </p>
+            <p class="text-muted small mb-0">
+                {{ tour.start_date.strftime("%d %b %Y") }} – {{ tour.end_date.strftime("%d %b %Y") }}
+            </p>
+        </div>
+
+        <div class="d-flex gap-2">
+            <a href="{{ url_for('itinerary.create', tour_id=tour.id) }}"
+               class="btn btn-primary">
+                + Add Activity
+            </a>
+            <a href="{{ url_for('tours.detail', tour_id=tour.id) }}"
+               class="btn btn-outline-secondary">
+                Back to Trip
+            </a>
+        </div>
+    </div>
+
+    <div class="row mb-4">
+        <div class="col-md-4 mb-3 mb-md-0">
+            <div class="card shadow-sm h-100">
+                <div class="card-body">
+                    <div class="text-muted small">📅 Trip Days</div>
+                    <div class="fw-bold fs-4">{{ tour.number_of_days }}</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4 mb-3 mb-md-0">
+            <div class="card shadow-sm h-100">
+                <div class="card-body">
+                    <div class="text-muted small">📍 Activities</div>
+                    <div class="fw-bold fs-4">{{ itinerary_items|length }}</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card shadow-sm h-100">
+                <div class="card-body">
+                    <div class="text-muted small">💰 Estimated Activity Cost</div>
+                    <div class="fw-bold fs-4">₹{{ "{:,.2f}".format(estimated_total) }}</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    {% for day_date, items in days.items() %}
+        <div class="card shadow-sm mb-4">
+            <div class="card-header bg-white py-3">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h4 class="mb-0">Day {{ loop.index }} · {{ day_date.strftime("%A") }}</h4>
+                        <div class="text-muted small">{{ day_date.strftime("%d %B %Y") }}</div>
+                    </div>
+                    <a href="{{ url_for('itinerary.create', tour_id=tour.id) }}?date={{ day_date.isoformat() }}"
+                       class="btn btn-outline-primary btn-sm">
+                        + Activity
+                    </a>
+                </div>
+            </div>
+
+            <div class="card-body">
+                {% if items %}
+                    <div class="itinerary-timeline">
+                        {% for item in items %}
+                            <div class="border rounded p-3 mb-3">
+                                <div class="d-flex justify-content-between align-items-start gap-3">
+                                    <div class="flex-grow-1">
+                                        <div class="d-flex flex-wrap align-items-center gap-2 mb-1">
+                                            {% if item.time %}
+                                                <span class="badge bg-dark">{{ item.time.strftime("%I:%M %p") }}</span>
+                                            {% else %}
+                                                <span class="badge bg-secondary">Any time</span>
+                                            {% endif %}
+
+                                            <span class="badge bg-primary">{{ item.category.Cat_Desc }}</span>
+                                        </div>
+
+                                        <h5 class="mb-1">{{ item.title }}</h5>
+
+                                        {% if item.location %}
+                                            <div class="text-muted small mb-1">📍 {{ item.location }}</div>
+                                        {% endif %}
+
+                                        {% if item.description %}
+                                            <p class="mb-1 text-muted">{{ item.description }}</p>
+                                        {% endif %}
+
+                                        {% if item.estimated_cost and item.estimated_cost > 0 %}
+                                            <div class="small fw-semibold">
+                                                Estimated cost: ₹{{ "{:,.2f}".format(item.estimated_cost) }}
+                                            </div>
+                                        {% endif %}
+                                    </div>
+
+                                    <div class="text-end text-nowrap">
+                                        <a href="{{ url_for('itinerary.edit', item_id=item.id) }}"
+                                           class="btn btn-outline-primary btn-sm">
+                                            Edit
+                                        </a>
+                                        <form method="POST"
+                                              action="{{ url_for('itinerary.delete', item_id=item.id) }}"
+                                              class="d-inline"
+                                              onsubmit="return confirm('Delete this itinerary activity?');">
+                                            <button type="submit" class="btn btn-outline-danger btn-sm">
+                                                Delete
+                                            </button>
+                                        </form>
+                                    </div>
+                                </div>
+                            </div>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <div class="text-center py-4">
+                        <div class="fs-1 mb-2">🧭</div>
+                        <p class="text-muted mb-3">No activities planned for this day yet.</p>
+                        <a href="{{ url_for('itinerary.create', tour_id=tour.id) }}?date={{ day_date.isoformat() }}"
+                           class="btn btn-primary btn-sm">
+                            + Plan This Day
+                        </a>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    {% endfor %}
+
+</div>
+{% endblock %}

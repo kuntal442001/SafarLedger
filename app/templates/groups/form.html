@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+
+{% block title %}{% if group %}Edit Group{% else %}Create Group{% endif %} - SafarLedger{% endblock %}
+
+{% block content %}
+<div class="container mt-5" style="max-width: 600px;">
+    <div class="card shadow-sm">
+        <div class="card-body p-4">
+            <h2 class="mb-1">{% if group %}✏️ Edit Group{% else %}👥 Create Group{% endif %}</h2>
+            <p class="text-muted mb-4">For trip: {{ tour.tour_name }}</p>
+            <form method="POST">
+                <div class="mb-3">
+                    <label for="name" class="form-label">Group Name</label>
+                    <input id="name" name="name" class="form-control" maxlength="100" required value="{{ suggested_name }}" placeholder="e.g. Group 1">
+                    <div class="form-text">Groups are generic. They can represent families, friends, couples, teams, or any other combination.</div>
+                </div>
+                <div class="d-flex gap-2 mt-3">
+                    <button type="submit" class="btn btn-primary">Save Group</button>
+                    <a href="{{ url_for('groups.list_groups', tour_id=tour.id) }}" class="btn btn-outline-secondary">Cancel</a>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

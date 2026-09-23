@@ -1,0 +1,90 @@
+{% extends "base.html" %}
+
+{% block title %}My Trips - SafarLedger{% endblock %}
+
+{% block content %}
+
+<div class="container mt-5">
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h2 class="mb-1">✈️ My Trips</h2>
+        <p class="text-muted mb-0">Keep track of all your journeys.</p>
+    </div>
+
+    <a href="{{ url_for('tours.create') }}" class="btn btn-primary">
+        + Create New Trip
+    </a>
+</div>
+
+{% if tours %}
+    <div class="row">
+        {% for tour in tours %}
+            <div class="col-md-6 col-lg-4 mb-4">
+                <div class="card h-100 shadow-sm">
+                    <div class="card-body">
+
+                        <h4 class="card-title">{{ tour.tour_name }}</h4>
+
+                        <p class="text-muted mb-3">
+                            📍 {{ tour.destination }}
+                        </p>
+
+                        <hr>
+
+                        <p class="mb-2">
+                            <strong>📅 Dates:</strong><br>
+                            {{ tour.start_date.strftime("%d %b %Y") }}
+                            –
+                            {{ tour.end_date.strftime("%d %b %Y") }}
+                        </p>
+
+                        <p class="mb-2">
+                            <strong>👥 People:</strong>
+                            {{ tour.number_of_people }}
+                        </p>
+
+                        <p class="mb-2">
+                            <strong>💰 Budget:</strong>
+                            ₹{{ "{:,.2f}".format(tour.budget) }}
+                        </p>
+
+                        <p class="mb-1 small">
+                            <strong>🧑‍🤝‍🧑 Per Person:</strong>
+                            ₹{{ "{:,.2f}".format(per_person_estimates[tour.id].per_person) }}
+                        </p>
+
+                        <p class="mb-2 small">
+                            <strong>📆 Per Person/Day:</strong>
+                            ₹{{ "{:,.2f}".format(per_person_estimates[tour.id].per_person_per_day) }}
+                        </p>
+
+                        <a href="{{ url_for('tours.detail', tour_id=tour.id) }}"
+                           class="btn btn-outline-primary btn-sm mt-2">
+                            View Trip
+                        </a>
+
+                    </div>
+                </div>
+            </div>
+        {% endfor %}
+    </div>
+
+{% else %}
+    <div class="card shadow-sm">
+        <div class="card-body text-center py-5">
+            <h4>No trips yet! 🧳</h4>
+            <p class="text-muted">
+                Start planning your next adventure by creating your first trip.
+            </p>
+
+            <a href="{{ url_for('tours.create') }}"
+               class="btn btn-primary">
+                Create Your First Trip
+            </a>
+        </div>
+    </div>
+{% endif %}
+
+</div>
+{% endblock %}

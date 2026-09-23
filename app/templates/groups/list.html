@@ -1,0 +1,96 @@
+{% extends "base.html" %}
+
+{% block title %}Traveler Groups - {{ tour.tour_name }} - SafarLedger{% endblock %}
+
+{% block content %}
+<div class="container mt-5" style="max-width: 1000px;">
+    <div class="d-flex justify-content-between align-items-start mb-4">
+        <div>
+            <h2 class="mb-1">👥 Traveler Groups</h2>
+            <p class="text-muted mb-0">Organize travelers for this trip and create group-level reports.</p>
+        </div>
+        <div class="d-flex gap-2">
+            <a href="{{ url_for('groups.create', tour_id=tour.id) }}" class="btn btn-primary">+ Add Group</a>
+            <a href="{{ url_for('travelers.list_travelers', tour_id=tour.id) }}" class="btn btn-outline-secondary">Travelers</a>
+            <a href="{{ url_for('tours.detail', tour_id=tour.id) }}" class="btn btn-outline-secondary">Back to Trip</a>
+        </div>
+    </div>
+
+    {% if groups %}
+        <div class="row g-3 mb-4">
+            {% for group in groups %}
+            <div class="col-lg-6">
+                <div class="card shadow-sm h-100">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between align-items-start mb-3">
+                            <div>
+                                <h4 class="mb-1">{{ group.name }}</h4>
+                                <div class="text-muted small">{{ group.travelers|length }} traveler{{ 's' if group.travelers|length != 1 else '' }}</div>
+                            </div>
+                            <div class="d-flex gap-1">
+                                <a href="{{ url_for('reports.builder', tour_id=tour.id, group_id=group.id) }}" class="btn btn-outline-primary btn-sm">📄 Report</a>
+                                <a href="{{ url_for('groups.edit', group_id=group.id) }}" class="btn btn-outline-secondary btn-sm">Edit</a>
+                                <form method="POST" action="{{ url_for('groups.delete', group_id=group.id) }}" class="d-inline" onsubmit="return confirm('Delete this group? Travelers will become unassigned.');">
+                                    <button class="btn btn-outline-danger btn-sm">Delete</button>
+                                </form>
+                            </div>
+                        </div>
+
+                        {% if group.travelers %}
+                            <ul class="list-group list-group-flush mb-3">
+                                {% for traveler in group.travelers|sort(attribute='name') %}
+                                <li class="list-group-item px-0 d-flex justify-content-between align-items-center">
+                                    <span>{{ traveler.name }} <span class="text-muted small">({{ traveler.age }})</span></span>
+                                    <form method="POST" action="{{ url_for('groups.remove_traveler', traveler_id=traveler.id) }}">
+                                        <button class="btn btn-sm btn-outline-secondary">Remove</button>
+                                    </form>
+                                </li>
+                                {% endfor %}
+                            </ul>
+                        {% else %}
+                            <p class="text-muted small">No travelers assigned yet.</p>
+                        {% endif %}
+
+                        {% set available = tour.travelers|selectattr('group_id', 'ne', group.id)|list %}
+                        {% if available %}
+                        <form method="POST" action="{{ url_for('groups.assign', group_id=group.id) }}" class="row g-2">
+                            <div class="col">
+                                <select name="traveler_id" class="form-select form-select-sm" required>
+                                    <option value="">Add traveler…</option>
+                                    {% for traveler in available|sort(attribute='name') %}
+                                        <option value="{{ traveler.id }}">{{ traveler.name }}{% if traveler.group %} · {{ traveler.group.name }}{% endif %}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            <div class="col-auto"><button class="btn btn-primary btn-sm">Add</button></div>
+                        </form>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    {% else %}
+        <div class="card shadow-sm mb-4"><div class="card-body text-center py-5">
+            <div class="fs-1 mb-2">👥</div>
+            <h4>No groups yet</h4>
+            <p class="text-muted">Create Group 1, Group 2, and so on, then assign travelers to them.</p>
+            <a href="{{ url_for('groups.create', tour_id=tour.id) }}" class="btn btn-primary">+ Create Group 1</a>
+        </div></div>
+    {% endif %}
+
+    {% if unassigned %}
+    <div class="card shadow-sm">
+        <div class="card-body">
+            <h5 class="mb-3">Unassigned Travelers</h5>
+            <div class="d-flex flex-wrap gap-2">
+                {% for traveler in unassigned %}
+                    <span class="badge bg-light text-dark border">{{ traveler.name }} · {{ traveler.age }}</span>
+                {% endfor %}
+            </div>
+            <div class="text-muted small mt-2">Unassigned travelers remain part of the trip and continue to work with the existing expense and settlement system.</div>
+        </div>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

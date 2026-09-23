@@ -1,0 +1,94 @@
+{% extends "base.html" %}
+
+{% block title %}Generate Report - {{ tour.tour_name }}{% endblock %}
+
+{% block content %}
+<div class="container mt-5" style="max-width: 900px;">
+    <div class="d-flex justify-content-between align-items-start mb-4">
+        <div>
+            <h2 class="mb-1">📄 Generate Trip Report</h2>
+            <p class="text-muted mb-0">{{ tour.tour_name }} · {{ tour.destination }}</p>
+        </div>
+        <a href="{{ url_for('tours.detail', tour_id=tour.id) }}" class="btn btn-outline-secondary">Back to Trip</a>
+    </div>
+
+    {% if error %}
+        <div class="alert alert-warning">{{ error }}</div>
+    {% endif %}
+
+    <form method="POST" action="{{ url_for('reports.generate', tour_id=tour.id) }}">
+        <div class="card shadow-sm mb-4">
+            <div class="card-body">
+                <h4 class="mb-1">Report scope</h4>
+                <div class="text-muted small mb-3">Generate a report for the whole trip or one traveler group.</div>
+                <select name="group_id" class="form-select">
+                    <option value="">Entire Trip</option>
+                    {% for group in groups %}
+                        <option value="{{ group.id }}" {% if selected_group and selected_group.id == group.id %}selected{% endif %}>{{ group.name }} ({{ group.travelers|length }} travelers)</option>
+                    {% endfor %}
+                </select>
+                {% if selected_group %}
+                    <div class="alert alert-info mt-3 mb-0 small">This report is scoped to <strong>{{ selected_group.name }}</strong>. Expense amounts are allocated to the group using the same participant rules as settlement.</div>
+                {% endif %}
+            </div>
+        </div>
+
+        <div class="card shadow-sm mb-4">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <div>
+                        <h4 class="mb-1">Choose what to include</h4>
+                        <div class="text-muted small">Only the sections you select will appear in the PDF.</div>
+                    </div>
+                    <span class="badge bg-secondary" id="selectedCount">0 selected</span>
+                </div>
+
+                <div class="row g-3">
+                    {% for key, label, description in sections %}
+                    <div class="col-md-6">
+                        <label class="card h-100 border p-3 report-option" style="cursor:pointer;">
+                            <div class="d-flex gap-3">
+                                <input class="form-check-input report-check mt-1" type="checkbox" name="{{ key }}" checked>
+                                <div>
+                                    <div class="fw-semibold">{{ label }}</div>
+                                    <div class="text-muted small mt-1">{{ description }}</div>
+                                </div>
+                            </div>
+                        </label>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+
+        <div class="d-flex justify-content-between align-items-center mb-5">
+            <div class="d-flex gap-2">
+                <button type="button" class="btn btn-outline-primary" id="selectAll">Select All</button>
+                <button type="button" class="btn btn-outline-secondary" id="clearAll">Clear All</button>
+            </div>
+            <button type="submit" class="btn btn-primary btn-lg">📄 Generate Report</button>
+        </div>
+    </form>
+</div>
+
+<script>
+(function () {
+    const checks = [...document.querySelectorAll('.report-check')];
+    const count = document.getElementById('selectedCount');
+    const update = () => {
+        const selected = checks.filter(c => c.checked).length;
+        count.textContent = `${selected} selected`;
+    };
+    checks.forEach(c => c.addEventListener('change', update));
+    document.getElementById('selectAll').addEventListener('click', () => {
+        checks.forEach(c => c.checked = true);
+        update();
+    });
+    document.getElementById('clearAll').addEventListener('click', () => {
+        checks.forEach(c => c.checked = false);
+        update();
+    });
+    update();
+})();
+</script>
+{% endblock %}

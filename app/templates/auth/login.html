@@ -1,0 +1,276 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Login | SafarLedger</title>
+
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-family: Arial, sans-serif;
+            background: #0b1120;
+            color: #ffffff;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 430px;
+            padding: 20px;
+        }
+
+        .card {
+            background: #111827;
+            border: 1px solid #263244;
+            border-radius: 16px;
+            padding: 35px;
+        }
+
+        .logo {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .logo h1 {
+            font-size: 30px;
+            margin-bottom: 8px;
+        }
+
+        .logo span {
+            color: #94a3b8;
+            font-size: 14px;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 7px;
+            font-size: 14px;
+            color: #cbd5e1;
+        }
+
+        input {
+            width: 100%;
+            padding: 12px 14px;
+            border-radius: 9px;
+            border: 1px solid #334155;
+            background: #0f172a;
+            color: white;
+            font-size: 15px;
+            outline: none;
+        }
+
+        input:focus {
+            border-color: #38bdf8;
+        }
+
+        .errors {
+            margin-top: 6px;
+            color: #f87171;
+            font-size: 13px;
+        }
+
+        .flash {
+            padding: 11px 13px;
+            border-radius: 8px;
+            margin-bottom: 18px;
+            background: #172033;
+            color: #cbd5e1;
+            font-size: 14px;
+        }
+
+        .submit-btn {
+            width: 100%;
+            padding: 13px;
+            margin-top: 5px;
+            border: none;
+            border-radius: 9px;
+            background: #38bdf8;
+            color: #082f49;
+            font-size: 15px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        .submit-btn:hover {
+            background: #7dd3fc;
+        }
+
+        .register-link {
+            text-align: center;
+            margin-top: 22px;
+            font-size: 14px;
+            color: #94a3b8;
+        }
+
+        .register-link a {
+            color: #38bdf8;
+            text-decoration: none;
+        }
+
+        .register-link a:hover {
+            text-decoration: underline;
+        }
+
+        .options-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 20px;
+            font-size: 14px;
+        }
+
+        .remember-me {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            color: #cbd5e1;
+        }
+
+        .remember-me input {
+            width: auto;
+            accent-color: #38bdf8;
+        }
+
+        .options-row a {
+            color: #38bdf8;
+            text-decoration: none;
+        }
+
+        .options-row a:hover {
+            text-decoration: underline;
+        }
+    </style>
+</head>
+
+<body>
+
+<div class="container">
+
+    <div class="card">
+
+        <div class="logo">
+            <h1>SafarLedger</h1>
+            <span>Welcome back to your travel ledger.</span>
+        </div>
+
+
+        <!-- Flash Messages -->
+
+        {% with messages = get_flashed_messages(with_categories=true) %}
+
+            {% if messages %}
+
+                {% for category, message in messages %}
+
+                    <div class="flash">
+                        {{ message }}
+                    </div>
+
+                {% endfor %}
+
+            {% endif %}
+
+        {% endwith %}
+
+
+        <!-- Login Form -->
+
+        <form method="POST">
+
+            {{ form.hidden_tag() }}
+
+
+            <!-- Email -->
+
+            <div class="form-group">
+
+                {{ form.email.label }}
+
+                {{ form.email(
+                    placeholder="Enter your email",
+                    autocomplete="email"
+                ) }}
+
+                {% for error in form.email.errors %}
+
+                    <div class="errors">
+                        {{ error }}
+                    </div>
+
+                {% endfor %}
+
+            </div>
+
+
+            <!-- Password -->
+
+            <div class="form-group">
+
+                {{ form.password.label }}
+
+                {{ form.password(
+                    placeholder="Enter your password",
+                    autocomplete="current-password"
+                ) }}
+
+                {% for error in form.password.errors %}
+
+                    <div class="errors">
+                        {{ error }}
+                    </div>
+
+                {% endfor %}
+
+            </div>
+
+
+            <!-- Remember me / Forgot password -->
+
+            <div class="options-row">
+
+                <label class="remember-me">
+                    {{ form.remember() }}
+                    Remember me
+                </label>
+
+                <a href="{{ url_for('auth.forgot_password') }}">
+                    Forgot password?
+                </a>
+
+            </div>
+
+
+            <!-- Submit -->
+
+            {{ form.submit(class="submit-btn") }}
+
+        </form>
+
+
+        <div class="register-link">
+            Don't have an account?
+            <a href="{{ url_for('auth.register') }}">
+                Create an account
+            </a>
+        </div>
+
+    </div>
+
+</div>
+
+</body>
+</html>

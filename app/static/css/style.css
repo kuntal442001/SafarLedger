@@ -1,0 +1,245 @@
+:root {
+    --sl-navy: #0d2f6b;
+    --sl-navy-dark: #081f4a;
+    --sl-orange: #f39c12;
+}
+
+/* Navbar: white background so the navy/orange logo stays crisp and legible */
+.navbar {
+    border-bottom: 3px solid var(--sl-orange);
+}
+
+.navbar .nav-link {
+    color: var(--sl-navy) !important;
+}
+
+.navbar .nav-link:hover,
+.navbar .nav-link:focus {
+    color: var(--sl-orange) !important;
+}
+
+/* Brand-colored button used in the navbar (e.g. Logout) */
+.btn-sl-primary {
+    background-color: var(--sl-navy);
+    border-color: var(--sl-navy);
+    color: #fff;
+}
+
+.btn-sl-primary:hover,
+.btn-sl-primary:focus {
+    background-color: var(--sl-navy-dark);
+    border-color: var(--sl-navy-dark);
+    color: #fff;
+}
+
+/* =========================================================
+   SafarLedger Mobile-Friendly Enhancements
+   Keeps the existing desktop design and only improves the
+   layout/spacing for smaller screens.
+   ========================================================= */
+
+html {
+    overflow-x: hidden;
+}
+
+body {
+    overflow-x: hidden;
+    -webkit-text-size-adjust: 100%;
+}
+
+img {
+    max-width: 100%;
+}
+
+/* Make Bootstrap containers breathe on phones without changing
+   the existing desktop widths. */
+.container {
+    width: 100%;
+}
+
+/* Forms are easier to use on touch screens. */
+.form-control,
+.form-select,
+.btn,
+.form-check-input {
+    touch-action: manipulation;
+}
+
+@media (max-width: 991.98px) {
+    .navbar .container {
+        padding-left: 16px;
+        padding-right: 16px;
+    }
+
+    .navbar-brand img {
+        height: 38px;
+        width: auto;
+    }
+
+    .navbar-collapse {
+        padding: 10px 0 6px;
+    }
+
+    .navbar-nav {
+        gap: 2px;
+    }
+
+    .navbar .nav-link {
+        padding: 10px 8px;
+    }
+
+    .navbar .btn-sl-primary {
+        margin-top: 6px;
+        width: 100%;
+    }
+}
+
+@media (max-width: 767.98px) {
+    main > .container,
+    .container.mt-5,
+    .container.mt-4,
+    .container.mt-3 {
+        margin-top: 24px !important;
+        padding-left: 16px;
+        padding-right: 16px;
+    }
+
+    /* Prevent long trip names, locations and notes from forcing
+       horizontal scrolling. */
+    h1, h2, h3, h4, h5, h6,
+    p, .card, .alert, td, th, label {
+        overflow-wrap: anywhere;
+    }
+
+    h1 {
+        font-size: clamp(1.65rem, 7vw, 2.25rem);
+    }
+
+    h2 {
+        font-size: clamp(1.35rem, 6vw, 1.8rem);
+    }
+
+    h3 {
+        font-size: clamp(1.2rem, 5.5vw, 1.5rem);
+    }
+
+    /* Tables remain full-featured but can be swiped horizontally. */
+    .table-responsive {
+        border-radius: 8px;
+        -webkit-overflow-scrolling: touch;
+    }
+
+    table.table {
+        min-width: 620px;
+    }
+
+    /* If a page doesn't have a .table-responsive wrapper, the table
+       itself becomes horizontally scrollable on small screens. */
+    table.table:not(.table-mobile-stack) {
+        display: block;
+        width: 100%;
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+        white-space: nowrap;
+    }
+
+    /* Cards should not create accidental horizontal overflow. */
+    .card {
+        max-width: 100%;
+    }
+
+    /* Bootstrap grids stack naturally, while action rows wrap nicely. */
+    .btn-group,
+    .d-flex.gap-2,
+    .d-flex.gap-3 {
+        flex-wrap: wrap;
+    }
+
+    .btn-group > .btn {
+        flex: 1 1 auto;
+    }
+
+    /* Touch-friendly controls. */
+    .btn {
+        min-height: 42px;
+    }
+
+    .btn-sm {
+        min-height: 38px;
+    }
+
+    .form-control,
+    .form-select {
+        min-height: 44px;
+        font-size: 16px;
+    }
+
+    textarea.form-control {
+        min-height: 100px;
+    }
+
+    .form-check-input {
+        width: 1.15em;
+        height: 1.15em;
+    }
+
+    .form-check-label {
+        padding-left: 4px;
+        line-height: 1.4;
+    }
+
+    /* Common action/header rows become vertical when space is tight. */
+    .mobile-stack {
+        flex-direction: column !important;
+        align-items: stretch !important;
+    }
+
+    .mobile-stack > * {
+        width: 100% !important;
+    }
+
+    /* Flash messages stay inside the viewport. */
+    .alert {
+        margin-left: 0;
+        margin-right: 0;
+    }
+
+    /* Report builder option cards stay easy to tap. */
+    .report-option {
+        min-height: 58px;
+    }
+}
+
+@media (max-width: 575.98px) {
+    .navbar .navbar-toggler {
+        padding: 7px 9px;
+    }
+
+    .navbar-brand img {
+        height: 34px;
+    }
+
+    main > .container,
+    .container.mt-5,
+    .container.mt-4,
+    .container.mt-3 {
+        padding-left: 12px;
+        padding-right: 12px;
+    }
+
+    .card-body {
+        padding: 16px;
+    }
+
+    .btn:not(.btn-close) {
+        white-space: normal;
+    }
+
+    /* Avoid oversized dashboard content on very small screens. */
+    .dashboard-container {
+        padding-left: 12px !important;
+        padding-right: 12px !important;
+        padding-top: 28px !important;
+        padding-bottom: 28px !important;
+    }
+}

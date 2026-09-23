@@ -1,0 +1,18 @@
+[project]
+name = "safarledger"
+version = "1.0.0"
+requires-python = ">=3.12,<3.14"
+dependencies = [
+  "Flask",
+  "Flask-SQLAlchemy",
+  "Flask-Migrate",
+  "Flask-Login",
+  "Flask-WTF",
+  "WTForms",
+  "psycopg2-binary",
+  "python-dotenv",
+  "email-validator",
+  "reportlab",
+  "Flask-Limiter",
+  "Flask-Mail",
+]

@@ -1,0 +1,62 @@
+{% extends "base.html" %}
+
+{% block title %}Add Traveler - SafarLedger{% endblock %}
+
+{% block content %}
+
+<div class="container mt-5" style="max-width: 600px;">
+    <div class="card shadow-sm">
+        <div class="card-body p-4">
+            <h2 class="mb-1">🧑‍🤝‍🧑 Add Traveler</h2>
+            <p class="text-muted mb-4">For trip: {{ tour.tour_name }}</p>
+
+            <form method="POST">
+                {{ form.hidden_tag() }}
+
+                <!-- Name -->
+                <div class="mb-3">
+                    {{ form.name.label(class="form-label") }}
+                    {{ form.name(class="form-control", placeholder="e.g. Priya Sharma") }}
+
+                    {% for error in form.name.errors %}
+                        <div class="text-danger small mt-1">{{ error }}</div>
+                    {% endfor %}
+                </div>
+
+                <!-- Age -->
+                <div class="mb-3">
+                    {{ form.age.label(class="form-label") }}
+                    {{ form.age(class="form-control", placeholder="e.g. 8", min="0") }}
+
+                    <div class="form-text">
+                        Travelers under 10 are automatically treated as free and excluded from billing.
+                    </div>
+
+                    {% for error in form.age.errors %}
+                        <div class="text-danger small mt-1">{{ error }}</div>
+                    {% endfor %}
+                </div>
+
+                <!-- Group -->
+                <div class="mb-3">
+                    {{ form.group_id.label(class="form-label") }}
+                    {{ form.group_id(class="form-select") }}
+                    <div class="form-text">Groups are optional. Use them to organize travelers and generate group-level reports.</div>
+                    {% for error in form.group_id.errors %}
+                        <div class="text-danger small mt-1">{{ error }}</div>
+                    {% endfor %}
+                </div>
+
+                <div class="d-flex gap-2 mt-3">
+                    {{ form.submit(class="btn btn-primary") }}
+
+                    <a href="{{ url_for('travelers.list_travelers', tour_id=tour.id) }}"
+                       class="btn btn-outline-secondary">
+                        Cancel
+                    </a>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

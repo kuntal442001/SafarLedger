@@ -1,0 +1,94 @@
+{% extends "base.html" %}
+
+{% block title %}Create Trip - SafarLedger{% endblock %}
+
+{% block content %}
+
+<div class="container mt-5" style="max-width: 700px;">
+    <div class="card shadow-sm">
+        <div class="card-body p-4">
+            <h2 class="mb-4">✈️ Create a New Trip</h2>
+
+        <form method="POST">
+            {{ form.hidden_tag() }}
+
+            <!-- Trip Name -->
+            <div class="mb-3">
+                {{ form.name.label(class="form-label") }}
+                {{ form.name(class="form-control", placeholder="e.g. Weekend in Darjeeling") }}
+
+                {% for error in form.name.errors %}
+                    <div class="text-danger small mt-1">{{ error }}</div>
+                {% endfor %}
+            </div>
+
+            <!-- Destination -->
+            <div class="mb-3">
+                {{ form.destination.label(class="form-label") }}
+                {{ form.destination(class="form-control", placeholder="e.g. Darjeeling, West Bengal") }}
+
+                {% for error in form.destination.errors %}
+                    <div class="text-danger small mt-1">{{ error }}</div>
+                {% endfor %}
+            </div>
+
+            <div class="row">
+                <!-- Start Date -->
+                <div class="col-md-6 mb-3">
+                    {{ form.start_date.label(class="form-label") }}
+                    {{ form.start_date(class="form-control", type="date") }}
+
+                    {% for error in form.start_date.errors %}
+                        <div class="text-danger small mt-1">{{ error }}</div>
+                    {% endfor %}
+                </div>
+
+                <!-- End Date -->
+                <div class="col-md-6 mb-3">
+                    {{ form.end_date.label(class="form-label") }}
+                    {{ form.end_date(class="form-control", type="date") }}
+
+                    {% for error in form.end_date.errors %}
+                        <div class="text-danger small mt-1">{{ error }}</div>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <!-- Number of People -->
+            <div class="mb-4">
+                {{ form.number_of_people.label(class="form-label") }}
+                {{ form.number_of_people(
+                    class="form-control",
+                    placeholder="e.g. 4",
+                    min="1"
+                ) }}
+
+                {% for error in form.number_of_people.errors %}
+                    <div class="text-danger small mt-1">{{ error }}</div>
+                {% endfor %}
+            </div>
+
+            <!-- Budget -->
+            <div class="mb-4">
+                {{ form.budget.label(class="form-label") }}
+                {{ form.budget(class="form-control", placeholder="e.g. 25000") }}
+
+                {% for error in form.budget.errors %}
+                    <div class="text-danger small mt-1">{{ error }}</div>
+                {% endfor %}
+            </div>
+
+            <div class="d-flex gap-2">
+                {{ form.submit(class="btn btn-primary") }}
+
+                <a href="{{ url_for('tours.list_tours') }}"
+                   class="btn btn-outline-secondary">
+                    Cancel
+                </a>
+            </div>
+        </form>
+    </div>
+</div>
+
+</div>
+{% endblock %}

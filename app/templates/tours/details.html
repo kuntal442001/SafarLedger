@@ -1,0 +1,763 @@
+{% extends "base.html" %}
+
+{% block title %}{{ tour.tour_name }} - SafarLedger{% endblock %}
+
+{% block content %}
+
+<div class="container mt-5" style="max-width: 1140px;">
+
+    <div class="d-flex flex-column gap-3 justify-content-between align-items-start mb-4">
+        <div>
+            <h2 class="mb-1">✈️ {{ tour.tour_name }}</h2>
+            <p class="text-muted mb-0">📍 {{ tour.destination }}</p>
+        </div>
+
+        <div class="d-flex gap-2">
+            <a href="{{ url_for('travelers.list_travelers', tour_id=tour.id) }}"
+               class="btn btn-outline-primary">
+                🧑‍🤝‍🧑 Travelers
+            </a>
+
+            <a href="{{ url_for('groups.list_groups', tour_id=tour.id) }}"
+               class="btn btn-outline-primary">
+                👥 Groups
+            </a>
+
+            <a href="{{ url_for('itinerary.list_itinerary', tour_id=tour.id) }}"
+               class="btn btn-outline-primary">
+                🗺️ Itinerary
+            </a>
+
+            <a href="{{ url_for('settlements.detail', tour_id=tour.id) }}"
+               class="btn btn-outline-primary">
+                💰 Settlement
+            </a>
+
+            <a href="{{ url_for('reports.builder', tour_id=tour.id) }}"
+               class="btn btn-outline-primary">
+                📄 Generate Report
+            </a>
+
+            <a href="{{ url_for('tours.edit', tour_id=tour.id) }}"
+               class="btn btn-primary">
+                ✏️ Edit Trip
+            </a>
+
+            <form method="POST"
+                  action="{{ url_for('tours.delete', tour_id=tour.id) }}"
+                  onsubmit="return confirm('Are you sure you want to delete this trip? This will also delete all of its expenses.');">
+                <button type="submit" class="btn btn-danger">
+                    🗑️ Delete Trip
+                </button>
+            </form>
+
+            <a href="{{ url_for('tours.list_tours') }}"
+               class="btn btn-outline-secondary">
+                Back
+            </a>
+        </div>
+    </div>
+
+    <!-- Trip Summary -->
+    <div class="row mb-4">
+        <div class="col-md-3 col-6 mb-3">
+            <div class="card h-100 text-center shadow-sm">
+                <div class="card-body">
+                    <div class="text-muted small mb-1">📅 Dates</div>
+                    <div class="fw-bold" style="font-size: 0.95rem;">
+                        {{ tour.start_date.strftime("%d %b %Y") }} –
+                        {{ tour.end_date.strftime("%d %b %Y") }}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-3 col-6 mb-3">
+            <div class="card h-100 text-center shadow-sm">
+                <div class="card-body">
+                    <div class="text-muted small mb-1">👥 People</div>
+                    <div class="fw-bold fs-5">{{ tour.number_of_people }}</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-3 col-6 mb-3">
+            <div class="card h-100 text-center shadow-sm">
+                <div class="card-body">
+                    <div class="text-muted small mb-1">💰 Budget</div>
+                    <div class="fw-bold fs-5">₹{{ "{:,.2f}".format(tour.budget) }}</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-3 col-6 mb-3">
+            <div class="card h-100 text-center shadow-sm">
+                <div class="card-body">
+                    <div class="text-muted small mb-1">
+                        {% if remaining_budget < 0 %}⚠️ Over Budget{% else %}✅ Remaining{% endif %}
+                    </div>
+                    <div class="fw-bold fs-5 {% if remaining_budget < 0 %}text-danger{% else %}text-success{% endif %}">
+                        ₹{{ "{:,.2f}".format(remaining_budget) }}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <p class="text-muted mb-4">
+        Total spent so far: <strong>₹{{ "{:,.2f}".format(total_spent) }}</strong>
+        across {{ expense_days }} day{{ "s" if expense_days != 1 else "" }}
+    </p>
+
+
+    <!-- Expandable Trip Detail Sections -->
+    <div class="d-flex flex-wrap gap-2 mb-4" id="trip-detail-controls">
+        <button type="button"
+                class="btn btn-outline-primary"
+                data-section-toggle="travelers-groups"
+                aria-expanded="false">
+            👥 Show Travelers &amp; Groups
+        </button>
+
+        <button type="button"
+                class="btn btn-outline-primary"
+                data-section-toggle="traveler-cost"
+                aria-expanded="false">
+            📄 Show Per-Traveler Cost
+        </button>
+
+        <button type="button"
+                class="btn btn-outline-primary"
+                data-section-toggle="expenses"
+                aria-expanded="false">
+            💰 Show Expenses
+        </button>
+
+        <button type="button"
+                class="btn btn-outline-primary"
+                data-section-toggle="itinerary"
+                aria-expanded="false">
+            🗺️ Show Itinerary
+        </button>
+
+        <button type="button"
+                class="btn btn-outline-primary"
+                data-section-toggle="weather"
+                aria-expanded="false">
+            🌤️ Show Weather
+        </button>
+    </div>
+
+    <!-- Weather -->
+    <div id="trip-section-weather" class="trip-detail-section" hidden>
+        <div class="card shadow-sm mb-4">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center mb-3 gap-2">
+                    <div>
+                        <h4 class="mb-0">🌤️ Trip Weather</h4>
+                        <div id="weather-location" class="text-muted small">
+                            Weather for your itinerary locations
+                        </div>
+                    </div>
+                    <button type="button" id="weather-refresh"
+                            class="btn btn-outline-primary btn-sm">
+                        ↻ Refresh
+                    </button>
+                </div>
+
+                <div id="weather-loading" class="text-center py-4">
+                    <div class="spinner-border spinner-border-sm me-2"
+                         role="status" aria-hidden="true"></div>
+                    Loading weather...
+                </div>
+
+                <div id="weather-error" class="alert alert-warning d-none mb-0"></div>
+
+                <div id="weather-content" class="d-none">
+                    <div id="weather-mode-note" class="alert alert-info small mb-4"></div>
+
+                    <div id="weather-places" class="row g-3"></div>
+
+                    <div id="weather-unresolved" class="alert alert-warning d-none mt-4 mb-0 small"></div>
+
+                    <div class="alert alert-secondary mt-4 mb-0 small">
+                        <strong>Trip dates:</strong>
+                        {{ tour.start_date.strftime("%d %b %Y") }} –
+                        {{ tour.end_date.strftime("%d %b %Y") }}
+                        <br>
+                        <span id="weather-note"></span>
+                        <br>
+                        <span id="weather-attribution" class="text-muted"></span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Traveler Groups -->
+    <div id="trip-section-travelers-groups" class="trip-detail-section" hidden>
+        <div class="card shadow-sm mb-4">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h4 class="mb-0">👥 Traveler Groups</h4>
+                    <a href="{{ url_for('groups.list_groups', tour_id=tour.id) }}" class="btn btn-outline-primary btn-sm">Manage Groups</a>
+                </div>
+                {% if tour.traveler_groups %}
+                    <div class="row g-3">
+                        {% for group in tour.traveler_groups|sort(attribute='name') %}
+                            <div class="col-md-6">
+                                <div class="border rounded p-3 h-100">
+                                    <div class="d-flex justify-content-between align-items-center mb-2">
+                                        <strong>{{ group.name }}</strong>
+                                        <span class="badge bg-secondary">{{ group.travelers|length }}</span>
+                                    </div>
+                                    <div class="small text-muted">
+                                        {% if group.travelers %}
+                                            {{ group.travelers|map(attribute='name')|join(', ') }}
+                                        {% else %}
+                                            No travelers assigned
+                                        {% endif %}
+                                    </div>
+                                    <a href="{{ url_for('reports.builder', tour_id=tour.id, group_id=group.id) }}" class="btn btn-sm btn-outline-primary mt-3">📄 Group Report</a>
+                                </div>
+                            </div>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <p class="text-muted mb-2">No groups created for this trip.</p>
+                    <a href="{{ url_for('groups.create', tour_id=tour.id) }}" class="btn btn-primary btn-sm">+ Create Group 1</a>
+                {% endif %}
+
+                <div class="mt-4">
+                    <a href="{{ url_for('travelers.list_travelers', tour_id=tour.id) }}" class="btn btn-outline-primary btn-sm">
+                        🧑‍🤝‍🧑 Manage Travelers
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Per-Traveler Cost Breakdown -->
+    <div id="trip-section-traveler-cost" class="trip-detail-section" hidden>
+        <div class="card shadow-sm mb-4">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h4 class="mb-0">🧾 Per-Traveler Cost</h4>
+
+                    <a href="{{ url_for('travelers.list_travelers', tour_id=tour.id) }}"
+                       class="btn btn-outline-primary btn-sm">
+                        Manage Travelers
+                    </a>
+                </div>
+
+                {% if traveler_costs %}
+                    <div class="table-responsive">
+                        <table class="table align-middle">
+                            <thead>
+                                <tr>
+                                    <th>Name</th>
+                                    <th class="text-end">Age</th>
+                                    <th>Type</th>
+                                    <th class="text-end">Amount Owed</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for row in traveler_costs %}
+                                    <tr>
+                                        <td>{{ row.traveler.name }}</td>
+                                        <td class="text-end">{{ row.traveler.age }}</td>
+                                        <td>
+                                            <span class="badge bg-secondary">{{ row.traveler.traveler_type }}</span>
+                                        </td>
+                                        <td class="text-end">
+                                            {% if row.traveler.is_chargeable %}
+                                                ₹{{ "{:,.2f}".format(row.amount) }}
+                                            {% else %}
+                                                <span class="text-muted">Free</span>
+                                            {% endif %}
+                                        </td>
+                                    </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+
+                    {% if unallocated_amount > 0 %}
+                        <div class="text-muted small mt-2">
+                            ₹{{ "{:,.2f}".format(unallocated_amount) }} in expenses couldn't be
+                            assigned to anyone (e.g. every participant on those was under 10).
+                        </div>
+                    {% endif %}
+                {% else %}
+                    <div class="text-center py-3">
+                        <p class="text-muted mb-3">
+                            No travelers logged yet, so costs can't be split per person.
+                        </p>
+                        <a href="{{ url_for('travelers.create', tour_id=tour.id) }}"
+                           class="btn btn-primary btn-sm">
+                            + Add Travelers
+                        </a>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Expenses -->
+    <div id="trip-section-expenses" class="trip-detail-section" hidden>
+        <div class="card shadow-sm mb-4">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h4 class="mb-0">💳 Expenses</h4>
+
+                    <a href="{{ url_for('expenses.create', tour_id=tour.id) }}"
+                       class="btn btn-primary btn-sm">
+                        + Add Expense
+                    </a>
+                </div>
+
+                {% if expenses %}
+                    <div class="table-responsive">
+                        <table class="table align-middle">
+                            <thead>
+                                <tr>
+                                    <th>Date</th>
+                                    <th>Category</th>
+                                    <th>Description</th>
+                                    <th>Participants</th>
+                                    <th class="text-end">Persons</th>
+                                    <th class="text-end">Days</th>
+                                    <th class="text-end">Amount</th>
+                                    <th class="text-end">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for expense in expenses %}
+                                    <tr>
+                                        <td>{{ expense.expense_date.strftime("%d %b %Y") if expense.expense_date else "—" }}</td>
+                                        <td>
+                                            <span class="badge bg-secondary">{{ expense.category.Cat_Desc }}</span>
+                                            {% if expense.expense_type %}
+                                                <div class="text-muted small">{{ expense.expense_type }}</div>
+                                            {% endif %}
+                                        </td>
+                                        <td>{{ expense.description or "—" }}</td>
+                                        <td class="small">
+                                            {% if expense.participants %}
+                                                {% for p in expense.participants %}
+                                                    {{ p.name }}{% if not p.is_chargeable %} <span class="text-muted">(free)</span>{% endif %}{% if not loop.last %}, {% endif %}
+                                                {% endfor %}
+                                            {% else %}
+                                                <span class="text-muted">— split across all</span>
+                                            {% endif %}
+                                        </td>
+                                        <td class="text-end">{{ expense.persons }}</td>
+                                        <td class="text-end">{{ expense.days }}</td>
+                                        <td class="text-end">₹{{ "{:,.2f}".format(expense.amount) }}</td>
+                                        <td class="text-end">
+                                            <a href="{{ url_for('expenses.edit', expense_id=expense.id_Exp) }}"
+                                               class="btn btn-outline-primary btn-sm">
+                                                Edit
+                                            </a>
+
+                                            <form method="POST"
+                                                  action="{{ url_for('expenses.delete', expense_id=expense.id_Exp) }}"
+                                                  class="d-inline"
+                                                  onsubmit="return confirm('Delete this expense?');">
+                                                <button type="submit" class="btn btn-outline-danger btn-sm">
+                                                    Delete
+                                                </button>
+                                            </form>
+                                        </td>
+                                    </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                {% else %}
+                    <div class="text-center py-4">
+                        <p class="text-muted mb-3">No expenses logged for this trip yet.</p>
+                        <a href="{{ url_for('expenses.create', tour_id=tour.id) }}"
+                           class="btn btn-primary btn-sm">
+                            + Add Your First Expense
+                        </a>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Itinerary -->
+    <div id="trip-section-itinerary" class="trip-detail-section" hidden>
+        <div class="card shadow-sm mb-4">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <div>
+                        <h4 class="mb-0">🗺️ Itinerary</h4>
+                        <div class="text-muted small">
+                            Estimated activity cost: ₹{{ "{:,.2f}".format(itinerary_estimated_total) }}
+                        </div>
+                    </div>
+                    <a href="{{ url_for('itinerary.list_itinerary', tour_id=tour.id) }}"
+                       class="btn btn-outline-primary btn-sm">
+                        Manage Itinerary
+                    </a>
+                </div>
+
+                {% if itinerary_items %}
+                    {% for day_date, day_items in itinerary_items|groupby('itinerary_date') %}
+                        <div class="border rounded p-3 mb-3">
+                            <div class="d-flex justify-content-between align-items-center mb-3">
+                                <strong>📅 {{ day_date.strftime("%A, %d %B %Y") }}</strong>
+                                <a href="{{ url_for('itinerary.create', tour_id=tour.id) }}?date={{ day_date.isoformat() }}"
+                                   class="btn btn-outline-primary btn-sm">
+                                    + Activity
+                                </a>
+                            </div>
+
+                            {% for item in day_items %}
+                                <div class="border-bottom py-2{% if loop.last %} pb-0 border-bottom-0{% endif %}">
+                                    <div class="d-flex justify-content-between align-items-start gap-3">
+                                        <div>
+                                            <div class="d-flex flex-wrap align-items-center gap-2 mb-1">
+                                                {% if item.time %}
+                                                    <span class="badge bg-dark">{{ item.time.strftime("%I:%M %p") }}</span>
+                                                {% else %}
+                                                    <span class="badge bg-secondary">Any time</span>
+                                                {% endif %}
+                                                <span class="badge bg-primary">{{ item.category.Cat_Desc }}</span>
+                                            </div>
+                                            <strong>{{ item.title }}</strong>
+                                            {% if item.location %}
+                                                <div class="text-muted small">📍 {{ item.location }}</div>
+                                            {% endif %}
+                                            {% if item.description %}
+                                                <div class="text-muted small mt-1">{{ item.description }}</div>
+                                            {% endif %}
+                                        </div>
+                                        {% if item.estimated_cost and item.estimated_cost > 0 %}
+                                            <div class="text-end text-nowrap small fw-semibold">
+                                                ₹{{ "{:,.2f}".format(item.estimated_cost) }}
+                                            </div>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            {% endfor %}
+                        </div>
+                    {% endfor %}
+                {% else %}
+                    <div class="text-center py-4">
+                        <div class="fs-1 mb-2">🧭</div>
+                        <p class="text-muted mb-3">No itinerary activities planned yet.</p>
+                        <a href="{{ url_for('itinerary.create', tour_id=tour.id) }}"
+                           class="btn btn-primary btn-sm">
+                            + Plan First Activity
+                        </a>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+            const buttons = document.querySelectorAll("[data-section-toggle]");
+            const sections = document.querySelectorAll(".trip-detail-section");
+
+            const labels = {
+                "travelers-groups": ["👥 Show Travelers & Groups", "✕ Close Travelers & Groups"],
+                "traveler-cost": ["📄 Show Per-Traveler Cost", "✕ Close Per-Traveler Cost"],
+                "expenses": ["💰 Show Expenses", "✕ Close Expenses"],
+                "itinerary": ["🗺️ Show Itinerary", "✕ Close Itinerary"],
+                "weather": ["🌤️ Show Weather", "✕ Close Weather"]
+            };
+
+            function closeAll(exceptKey = null) {
+                sections.forEach(function (section) {
+                    const key = section.id.replace("trip-section-", "");
+                    if (key !== exceptKey) {
+                        section.hidden = true;
+                    }
+                });
+
+                buttons.forEach(function (button) {
+                    const key = button.dataset.sectionToggle;
+                    if (key !== exceptKey) {
+                        button.setAttribute("aria-expanded", "false");
+                        button.textContent = labels[key][0];
+                    }
+                });
+            }
+
+            buttons.forEach(function (button) {
+                button.addEventListener("click", function () {
+                    const key = button.dataset.sectionToggle;
+                    const section = document.getElementById("trip-section-" + key);
+                    const isOpen = !section.hidden;
+
+                    if (isOpen) {
+                        section.hidden = true;
+                        button.setAttribute("aria-expanded", "false");
+                        button.textContent = labels[key][0];
+                        return;
+                    }
+
+                    closeAll(key);
+                    section.hidden = false;
+                    button.setAttribute("aria-expanded", "true");
+                    button.textContent = labels[key][1];
+                });
+            });
+
+            const weatherUrl = {{ url_for("tours.weather", tour_id=tour.id)|tojson }};
+            let weatherLoaded = false;
+
+            function formatDate(dateString) {
+                const date = new Date(dateString + "T00:00:00");
+                return date.toLocaleDateString(undefined, {
+                    weekday: "short",
+                    day: "numeric",
+                    month: "short"
+                });
+            }
+
+            function weatherIcon(code) {
+                if (code === 0) return "☀️";
+                if (code <= 3) return "⛅";
+                if (code <= 48) return "🌫️";
+                if (code <= 67 || code <= 82) return "🌧️";
+                if (code <= 86) return "❄️";
+                return "⛈️";
+            }
+
+            function escapeText(value) {
+                return value === null || value === undefined ? "" : String(value);
+            }
+
+            function renderWeather(data) {
+                const placesContainer = document.getElementById("weather-places");
+                placesContainer.innerHTML = "";
+
+                const modeNote = document.getElementById("weather-mode-note");
+
+                if (data.mode === "itinerary") {
+                    modeNote.textContent =
+                        "Weather is shown separately for locations found in your itinerary. SafarLedger uses the Location field first, then route names in the activity title.";
+                } else {
+                    modeNote.textContent =
+                        "No weatherable itinerary location was found, so SafarLedger is showing general trip weather.";
+                }
+
+                data.places.forEach(function (place) {
+                    const col = document.createElement("div");
+                    col.className = "col-12 col-lg-6";
+
+                    const card = document.createElement("div");
+                    card.className = "border rounded p-3 h-100";
+
+                    const heading = document.createElement("div");
+                    heading.className = "d-flex justify-content-between align-items-start gap-2 mb-3";
+
+                    const title = document.createElement("div");
+                    const name = document.createElement("h5");
+                    name.className = "mb-1";
+                    name.textContent = "📍 " + escapeText(place.name);
+
+                    const area = document.createElement("div");
+                    area.className = "text-muted small";
+                    area.textContent = [place.admin1, place.country]
+                        .filter(Boolean).join(", ");
+
+                    title.append(name, area);
+
+                    const temp = document.createElement("div");
+                    temp.className = "text-end";
+                    const tempValue = document.createElement("div");
+                    tempValue.className = "fw-bold fs-3";
+                    tempValue.textContent =
+                        place.current.temperature == null
+                            ? "—"
+                            : `${Math.round(place.current.temperature)}°C`;
+                    const currentIcon = document.createElement("span");
+                    currentIcon.className = "me-1";
+                    currentIcon.textContent = place.current.icon || "🌤️";
+                    tempValue.prepend(currentIcon);
+                    const condition = document.createElement("div");
+                    condition.className = "small text-muted";
+                    condition.textContent = escapeText(place.current.condition);
+                    temp.append(tempValue, condition);
+
+                    heading.append(title, temp);
+
+                    const stats = document.createElement("div");
+                    stats.className = "row g-2 small mb-3";
+
+                    [
+                        ["Feels like", place.current.feels_like, "°C"],
+                        ["Humidity", place.current.humidity, "%"],
+                        ["Wind", place.current.wind, " km/h"]
+                    ].forEach(function (item) {
+                        const statCol = document.createElement("div");
+                        statCol.className = "col-4";
+
+                        const stat = document.createElement("div");
+                        stat.className = "border rounded p-2 text-center h-100";
+
+                        const label = document.createElement("div");
+                        label.className = "text-muted";
+                        label.textContent = item[0];
+
+                        const value = document.createElement("div");
+                        value.className = "fw-semibold";
+                        value.textContent =
+                            item[1] == null ? "—" :
+                            `${Math.round(item[1])}${item[2]}`;
+
+                        stat.append(label, value);
+                        statCol.appendChild(stat);
+                        stats.appendChild(statCol);
+                    });
+
+                    card.append(heading, stats);
+
+                    if (place.itinerary_dates && place.itinerary_dates.length) {
+                        const dates = document.createElement("div");
+                        dates.className = "small text-muted mb-3";
+                        dates.textContent =
+                            "Itinerary: " +
+                            place.itinerary_dates.map(formatDate).join(", ");
+                        card.appendChild(dates);
+                    }
+
+                    if (place.fallback_from) {
+                        const fallback = document.createElement("div");
+                        fallback.className = "small text-muted mb-3";
+                        fallback.textContent =
+                            `Using ${place.name} as the weather point for ${place.fallback_from}.`;
+                        card.appendChild(fallback);
+                    }
+
+                    if (place.forecast && place.forecast.length) {
+                        const forecastTitle = document.createElement("div");
+                        forecastTitle.className = "fw-semibold mb-2";
+                        forecastTitle.textContent = "Available Forecast";
+                        card.appendChild(forecastTitle);
+
+                        const forecastRow = document.createElement("div");
+                        forecastRow.className = "row g-2";
+
+                        place.forecast.forEach(function (day) {
+                        const dayCol = document.createElement("div");
+                        dayCol.className = "col-6 col-md-4";
+
+                        const dayCard = document.createElement("div");
+                        dayCard.className = "border rounded p-2 text-center h-100";
+
+                        const date = document.createElement("div");
+                        date.className = "small fw-semibold";
+                        date.textContent = formatDate(day.date);
+
+                        const icon = document.createElement("div");
+                        icon.className = "fs-4";
+                        icon.textContent = day.icon || "🌤️";
+
+                        const condition = document.createElement("div");
+                        condition.className = "small text-muted";
+                        condition.textContent = day.condition;
+
+                        const temp = document.createElement("div");
+                        temp.className = "small fw-semibold mt-1";
+                        temp.textContent =
+                            `${day.max == null ? "—" : Math.round(day.max)}° / ` +
+                            `${day.min == null ? "—" : Math.round(day.min)}°C`;
+
+                        const rain = document.createElement("div");
+                        rain.className = "small text-muted";
+                        rain.textContent =
+                            `${day.rain_probability == null ? 0 : day.rain_probability}% rain`;
+
+                            dayCard.append(date, icon, condition, temp, rain);
+                            dayCol.appendChild(dayCard);
+                            forecastRow.appendChild(dayCol);
+                        });
+
+                        card.appendChild(forecastRow);
+                    }
+                    col.appendChild(card);
+                    placesContainer.appendChild(col);
+                });
+
+                const unresolved = document.getElementById("weather-unresolved");
+                if (data.unresolved && data.unresolved.length) {
+                    unresolved.textContent =
+                        "Weather could not be resolved for: " +
+                        data.unresolved.join(", ") +
+                        ". Add a more specific place name in the itinerary if needed.";
+                    unresolved.classList.remove("d-none");
+                } else {
+                    unresolved.classList.add("d-none");
+                }
+
+                document.getElementById("weather-note").textContent = data.forecast_note;
+
+                const attribution = document.getElementById("weather-attribution");
+                if (attribution) {
+                    attribution.innerHTML = 'Weather data by <a href="https://www.weatherapi.com/" target="_blank" rel="noopener noreferrer">WeatherAPI.com</a>';
+                }
+            }
+
+            async function loadWeather(forceRefresh = false) {
+                const loading = document.getElementById("weather-loading");
+                const content = document.getElementById("weather-content");
+                const error = document.getElementById("weather-error");
+
+                if (weatherLoaded && !forceRefresh) return;
+
+                loading.classList.remove("d-none");
+                content.classList.add("d-none");
+                error.classList.add("d-none");
+
+                try {
+                    const response = await fetch(weatherUrl, {
+                        headers: { "Accept": "application/json" },
+                        cache: "no-store"
+                    });
+                    const data = await response.json();
+
+                    if (!response.ok || !data.ok) {
+                        throw new Error(data.message || "Unable to load weather.");
+                    }
+
+                    document.getElementById("weather-location").textContent =
+                        data.mode === "itinerary"
+                            ? `📍 ${data.places.length} itinerary location${data.places.length === 1 ? "" : "s"}`
+                            : `📍 ${data.places[0].name}`;
+
+                    renderWeather(data);
+
+                    weatherLoaded = true;
+                    loading.classList.add("d-none");
+                    content.classList.remove("d-none");
+                } catch (err) {
+                    loading.classList.add("d-none");
+                    error.textContent =
+                        err.message || "Weather service is temporarily unavailable.";
+                    error.classList.remove("d-none");
+                }
+            }
+
+            document.querySelector('[data-section-toggle="weather"]').addEventListener("click", function () {
+                if (this.getAttribute("aria-expanded") === "true") {
+                    loadWeather();
+                }
+            });
+
+            document.getElementById("weather-refresh").addEventListener("click", function () {
+                loadWeather(true);
+            });
+
+        });
+    </script>
+
+</div>
+{% endblock %}

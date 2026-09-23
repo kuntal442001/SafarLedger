@@ -1,0 +1,349 @@
+{% extends "base.html" %}
+
+{% block title %}Settlement - {{ tour.tour_name }} - SafarLedger{% endblock %}
+
+{% block content %}
+<div class="container mt-5" style="max-width: 1100px;">
+    <div class="d-flex justify-content-between align-items-start mb-4">
+        <div>
+            <h2 class="mb-1">💰 Traveler Settlement</h2>
+            <p class="text-muted mb-0">{{ tour.tour_name }} · {{ tour.destination }}</p>
+        </div>
+        <a href="{{ url_for('tours.detail', tour_id=tour.id) }}" class="btn btn-outline-secondary">Back to Trip</a>
+    </div>
+
+    <div class="card shadow-sm mb-4">
+        <div class="card-body">
+            <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
+                <div>
+                    <h4 class="mb-1">Settlement View</h4>
+                    <p class="text-muted small mb-0">See the complete trip or one traveler group at a time.</p>
+                </div>
+                <form method="GET" action="{{ url_for('settlements.detail', tour_id=tour.id) }}" class="d-flex gap-2">
+                    <select name="group_id" class="form-select" onchange="this.form.submit()">
+                        <option value="">Entire Trip</option>
+                        {% for group in groups %}
+                            <option value="{{ group.id }}" {% if selected_group and selected_group.id == group.id %}selected{% endif %}>
+                                {{ group.name }}
+                            </option>
+                        {% endfor %}
+                        {% if tour.travelers|selectattr('group_id', 'equalto', none)|list %}
+                            <option value="unassigned" selected>Unassigned travelers</option>
+                        {% endif %}
+                    </select>
+                </form>
+            </div>
+
+            {% if selected_group or selected_unassigned %}
+                <div class="alert {% if selected_group_settled %}alert-success{% elif selected_group_balance < 0 %}alert-warning{% else %}alert-light{% endif %} border mb-0">
+                    <div class="d-flex flex-wrap justify-content-between align-items-center gap-2">
+                        <div>
+                            <strong>{{ selected_group.name if selected_group else 'Unassigned travelers' }}</strong> · {{ selected_travelers|length }} member{{ 's' if selected_travelers|length != 1 else '' }}.
+                            <div class="small mt-1">This group is treated as one settlement unit. A member can pay the full amount for the other members.</div>
+                        </div>
+                        {% if selected_group_settled %}
+                            <span class="badge bg-success fs-6">✓ Group Settled</span>
+                        {% elif selected_group_balance < 0 %}
+                            <span class="badge bg-danger fs-6">Group Owes ₹{{ "{:,.2f}".format(-selected_group_balance) }}</span>
+                        {% else %}
+                            <span class="badge bg-primary fs-6">Group Is Owed ₹{{ "{:,.2f}".format(selected_group_balance) }}</span>
+                        {% endif %}
+                    </div>
+                    <div class="row mt-3 small">
+                        <div class="col-sm-4"><span class="text-muted">Group share</span><br><strong>₹{{ "{:,.2f}".format(selected_group_share) }}</strong></div>
+                        <div class="col-sm-4"><span class="text-muted">Group paid</span><br><strong>₹{{ "{:,.2f}".format(selected_group_paid) }}</strong></div>
+                        <div class="col-sm-4"><span class="text-muted">Group balance</span><br><strong>₹{{ "{:,.2f}".format(selected_group_balance) }}</strong></div>
+                    </div>
+                </div>
+            {% else %}
+                <div class="row g-3">
+                    {% for summary in group_summaries %}
+                        <div class="col-lg-4 col-md-6">
+                            <div class="border rounded p-3 h-100">
+                                <div class="d-flex justify-content-between align-items-start">
+                                    <div>
+                                        <h5 class="mb-1">{{ summary.group.name if summary.group else 'Unassigned' }}</h5>
+                                        <div class="text-muted small">{{ summary.members|length }} member{{ 's' if summary.members|length != 1 else '' }}</div>
+                                    </div>
+                                    <a href="{{ url_for('settlements.detail', tour_id=tour.id, group_id=summary.group.id) if summary.group else url_for('settlements.detail', tour_id=tour.id, group_id='unassigned') }}" class="btn btn-outline-primary btn-sm">
+                                        View
+                                    </a>
+                                </div>
+                                <div class="row mt-3 small">
+                                    <div class="col-4"><div class="text-muted">Share</div><strong>₹{{ "{:,.2f}".format(summary.share) }}</strong></div>
+                                    <div class="col-4"><div class="text-muted">Paid</div><strong>₹{{ "{:,.2f}".format(summary.paid) }}</strong></div>
+                                    <div class="col-4"><div class="text-muted">Balance</div>
+                                        {% if summary.balance > 0 %}<strong class="text-success">+₹{{ "{:,.2f}".format(summary.balance) }}</strong>
+                                        {% elif summary.balance < 0 %}<strong class="text-danger">-₹{{ "{:,.2f}".format(-summary.balance) }}</strong>
+                                        {% else %}<strong>₹0.00</strong>{% endif %}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    {% else %}
+                        <div class="col-12"><p class="text-muted mb-0">No groups have been created for this trip yet.</p></div>
+                    {% endfor %}
+                </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <div class="card shadow-sm mb-4">
+        <div class="card-body">
+            <h4 class="mb-3">Record a Payment</h4>
+            <p class="text-muted small">
+                <strong>Paid by</strong> is the person whose money was actually used.
+                The group is only an accounting/view filter; money is never recorded as being paid by a group wallet.
+                If one person pays for the whole group, select <strong>Entire Group</strong> in <strong>Paid for</strong>. For a payment covering only another individual, use <strong>On behalf of</strong>.
+            </p>
+            <form method="POST" action="{{ url_for('settlements.add_payment', tour_id=tour.id) }}">
+                <div class="row g-3 align-items-end">
+                    <div class="col-lg-3 col-md-6">
+                        <label class="form-label fw-semibold">Expense</label>
+                        <select name="expense_id" id="expenseSelect" class="form-select" required>
+                            {% for expense in expenses %}
+                                {% set remaining = expense_remaining[expense.id_Exp] %}
+                                <option value="{{ expense.id_Exp }}"
+                                        data-total="{{ '%.2f'|format(expense.amount) }}"
+                                        data-remaining="{{ '%.2f'|format(remaining) }}">
+                                    {{ expense.description or expense.expense_type or expense.category.Cat_Desc }} — ₹{{ "{:,.2f}".format(expense.amount) }}
+                                </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-lg-2 col-md-6">
+                        <label class="form-label fw-semibold">Group</label>
+                        <select name="group_id" id="paymentGroupSelect" class="form-select">
+                            <option value="" data-group="all">All / no group filter</option>
+                            {% for group in groups %}
+                                <option value="{{ group.id }}" data-group="{{ group.id }}" {% if selected_group and selected_group.id == group.id %}selected{% endif %}>{{ group.name }}</option>
+                            {% endfor %}
+                            <option value="unassigned" data-group="unassigned" {% if selected_unassigned %}selected{% endif %}>Unassigned</option>
+                        </select>
+                    </div>
+                    <div class="col-lg-2 col-md-6">
+                        <label class="form-label fw-semibold">Paid by</label>
+                        <select name="paid_by_id" id="paidBySelect" class="form-select" required>
+                            {% for traveler in travelers %}
+                                <option value="{{ traveler.id }}" data-group="{{ traveler.group_id if traveler.group_id else 'unassigned' }}">{{ traveler.name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-lg-2 col-md-6">
+                        <label class="form-label fw-semibold">Paid for</label>
+                        <select name="paid_for_group_id" id="paidForGroupSelect" class="form-select">
+                            <option value="">Self / individual</option>
+                            {% for group in groups %}
+                                <option value="{{ group.id }}" {% if selected_group and selected_group.id == group.id %}selected{% endif %}>Entire {{ group.name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-lg-2 col-md-6">
+                        <label class="form-label fw-semibold">On behalf of</label>
+                        <select name="on_behalf_of_id" id="onBehalfSelect" class="form-select">
+                            <option value="">Self / not applicable</option>
+                            {% for traveler in travelers %}
+                                <option value="{{ traveler.id }}">{{ traveler.name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-lg-2 col-md-6">
+                        <label class="form-label fw-semibold">Amount</label>
+                        <input type="number" name="amount" id="amountInput" class="form-control" min="0.01" step="0.01" required>
+                    </div>
+                    <div class="col-lg-2 col-md-6">
+                        <label class="form-label fw-semibold">Method</label>
+                        <select name="method" class="form-select">
+                            {% for method in methods %}
+                                <option value="{{ method }}">{{ method }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-lg-3 col-md-6">
+                        <label class="form-label fw-semibold">Note</label>
+                        <input type="text" name="note" class="form-control" placeholder="Optional">
+                    </div>
+                    <div class="col-lg-2 col-md-6">
+                        <button type="submit" class="btn btn-primary w-100">Add</button>
+                    </div>
+                </div>
+            </form>
+            <div id="expenseInfo" class="alert alert-light border mt-3 mb-0 small"></div>
+        </div>
+    </div>
+
+    <div class="card shadow-sm mb-4">
+        <div class="card-body">
+            <h4 class="mb-3">Who owes what?{% if selected_group %} · {{ selected_group.name }}{% endif %}</h4>
+            <div class="table-responsive">
+                <table class="table align-middle mb-0">
+                    <thead>
+                        <tr>
+                            <th>Traveler</th>
+                            <th class="text-end">Share</th>
+                            <th class="text-end">Paid</th>
+                            <th class="text-end">Balance</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for row in balances %}
+                            <tr>
+                                <td>
+                                    {{ row.traveler.name }}
+                                    {% if not row.traveler.is_chargeable %}
+                                        <span class="badge bg-light text-dark">Free child</span>
+                                    {% endif %}
+                                </td>
+                                <td class="text-end">₹{{ "{:,.2f}".format(row.share) }}</td>
+                                <td class="text-end">₹{{ "{:,.2f}".format(row.paid) }}</td>
+                                <td class="text-end">
+                                    {% if selected_group or selected_unassigned %}
+                                        {% if selected_group_settled %}
+                                            <span class="text-success fw-semibold">✓ Settled</span>
+                                        {% elif row.balance > 0 %}
+                                            <span class="text-success fw-semibold">Group is owed ₹{{ "{:,.2f}".format(selected_group_balance) }}</span>
+                                        {% elif selected_group_balance < 0 %}
+                                            <span class="text-danger fw-semibold">Group owes ₹{{ "{:,.2f}".format(-selected_group_balance) }}</span>
+                                        {% else %}
+                                            <span class="text-muted">Settled</span>
+                                        {% endif %}
+                                    {% else %}
+                                        {% if row.balance > 0 %}
+                                            <span class="text-success fw-semibold">Gets ₹{{ "{:,.2f}".format(row.balance) }}</span>
+                                        {% elif row.balance < 0 %}
+                                            <span class="text-danger fw-semibold">Owes ₹{{ "{:,.2f}".format(-row.balance) }}</span>
+                                        {% else %}
+                                            <span class="text-muted">Settled</span>
+                                        {% endif %}
+                                    {% endif %}
+                                </td>
+                            </tr>
+                        {% else %}
+                            <tr><td colspan="4" class="text-muted">No travelers found.</td></tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <div class="card shadow-sm mb-4">
+        <div class="card-body">
+            <h4 class="mb-3">Suggested Transfers</h4>
+            <p class="text-muted small mb-3">These are the actual transfers required to settle the <strong>entire trip</strong>. The group filter above does not hide transfers involving other groups.</p>
+            {% if all_transfers %}
+                {% for transfer in all_transfers %}
+                    <div class="d-flex justify-content-between align-items-center border rounded p-3 mb-2">
+                        <div>
+                            <strong>{{ transfer['from'].name }} → {{ transfer['to'].name }}</strong>
+                            {% if transfer['from'].group and transfer['to'].group and transfer['from'].group.id != transfer['to'].group.id %}
+                                <div class="text-muted small">{{ transfer['from'].group.name }} → {{ transfer['to'].group.name }}</div>
+                            {% endif %}
+                        </div>
+                        <span class="badge bg-primary rounded-pill fs-6">₹{{ "{:,.2f}".format(transfer.amount) }}</span>
+                    </div>
+                {% endfor %}
+            {% else %}
+                <p class="text-muted mb-0">No settlement transfers are currently required for the trip.</p>
+            {% endif %}
+        </div>
+    </div>
+
+    <div class="card shadow-sm mb-5">
+        <div class="card-body">
+            <h4 class="mb-3">Payment Records{% if selected_group %} · {{ selected_group.name }}{% endif %}</h4>
+            {% if payment_records %}
+                <div class="table-responsive">
+                    <table class="table align-middle">
+                        <thead>
+                            <tr>
+                                <th>Expense</th>
+                                <th>Paid By</th>
+                                <th>Group</th>
+                                <th>On Behalf Of</th>
+                                <th>Method</th>
+                                <th>Note</th>
+                                <th class="text-end">Amount</th>
+                                <th></th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for expense, payment in payment_records %}
+                                <tr>
+                                    <td>{{ expense.description or expense.expense_type or expense.category.Cat_Desc }}</td>
+                                    <td>{{ payment.paid_by.name }}</td>
+                                    <td>{{ payment.paid_by.group.name if payment.paid_by.group else 'Unassigned' }}</td>
+                                    <td>
+                                        {% if payment.paid_for_group %}
+                                            <span class="fw-semibold">Entire {{ payment.paid_for_group.name }}</span>
+                                            <div class="text-muted small">group payment</div>
+                                        {% elif payment.on_behalf_of and payment.on_behalf_of.id != payment.paid_by.id %}
+                                            <span class="fw-semibold">{{ payment.on_behalf_of.name }}</span>
+                                            <div class="text-muted small">paid on their behalf</div>
+                                        {% else %}
+                                            <span class="text-muted">Self</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>{{ payment.method }}</td>
+                                    <td>{{ payment.note or '—' }}</td>
+                                    <td class="text-end">₹{{ "{:,.2f}".format(payment.amount) }}</td>
+                                    <td class="text-end">
+                                        <form method="POST" action="{{ url_for('settlements.delete_payment', payment_id=payment.id) }}" onsubmit="return confirm('Delete this payment?');">
+                                            <button type="submit" class="btn btn-outline-danger btn-sm">Delete</button>
+                                        </form>
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            {% else %}
+                <p class="text-muted mb-0">No payment records for this view yet.</p>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<script>
+(function () {
+    const expenseSelect = document.getElementById('expenseSelect');
+    const info = document.getElementById('expenseInfo');
+    const amountInput = document.getElementById('amountInput');
+    const groupSelect = document.getElementById('paymentGroupSelect');
+    const paidBySelect = document.getElementById('paidBySelect');
+
+    function updateExpenseInfo() {
+        if (!expenseSelect || !expenseSelect.options.length) return;
+        const option = expenseSelect.options[expenseSelect.selectedIndex];
+        const total = Number(option.dataset.total || 0);
+        const remaining = Number(option.dataset.remaining || 0);
+        info.innerHTML = '<strong>Selected expense:</strong> ₹' + total.toLocaleString('en-IN', {minimumFractionDigits: 2})
+            + ' &nbsp;|&nbsp; <strong>Already paid:</strong> ₹' + (total - remaining).toLocaleString('en-IN', {minimumFractionDigits: 2})
+            + ' &nbsp;|&nbsp; <strong>Remaining:</strong> ₹' + remaining.toLocaleString('en-IN', {minimumFractionDigits: 2});
+        amountInput.max = remaining.toFixed(2);
+        if (!amountInput.value || Number(amountInput.value) > remaining) {
+            amountInput.value = remaining > 0 ? remaining.toFixed(2) : '';
+        }
+    }
+
+    function filterPayers() {
+        if (!groupSelect || !paidBySelect) return;
+        const selected = groupSelect.value;
+        let firstVisible = null;
+        Array.from(paidBySelect.options).forEach(option => {
+            const visible = !selected || option.dataset.group === selected;
+            option.hidden = !visible;
+            if (visible && !firstVisible) firstVisible = option;
+        });
+        if (firstVisible) {
+            paidBySelect.value = firstVisible.value;
+        }
+    }
+
+    expenseSelect.addEventListener('change', updateExpenseInfo);
+    groupSelect.addEventListener('change', filterPayers);
+    updateExpenseInfo();
+    filterPayers();
+})();
+</script>
+{% endblock %}

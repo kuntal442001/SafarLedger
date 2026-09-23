@@ -1,0 +1,136 @@
+{% extends "base.html" %}
+
+{% block title %}Edit Expense - SafarLedger{% endblock %}
+
+{% block content %}
+
+<div class="container mt-5" style="max-width: 700px;">
+    <div class="card shadow-sm">
+        <div class="card-body p-4">
+            <h2 class="mb-1">✏️ Edit Expense</h2>
+            <p class="text-muted mb-4">For trip: {{ expense.tour.tour_name }}</p>
+
+            <form method="POST">
+                {{ form.hidden_tag() }}
+
+                <!-- Category -->
+                <div class="mb-3">
+                    {{ form.Id_Cat.label(class="form-label") }}
+                    {{ form.Id_Cat(class="form-select") }}
+
+                    {% for error in form.Id_Cat.errors %}
+                        <div class="text-danger small mt-1">{{ error }}</div>
+                    {% endfor %}
+                </div>
+
+                <!-- Type -->
+                <div class="mb-3">
+                    {{ form.expense_type.label(class="form-label") }}
+                    {{ form.expense_type(class="form-control", placeholder="e.g. Hotel, Taxi, Lunch") }}
+
+                    {% for error in form.expense_type.errors %}
+                        <div class="text-danger small mt-1">{{ error }}</div>
+                    {% endfor %}
+                </div>
+
+                <!-- Description -->
+                <div class="mb-3">
+                    {{ form.description.label(class="form-label") }}
+                    {{ form.description(class="form-control", placeholder="Optional notes") }}
+
+                    {% for error in form.description.errors %}
+                        <div class="text-danger small mt-1">{{ error }}</div>
+                    {% endfor %}
+                </div>
+
+                <div class="row">
+                    <!-- Date -->
+                    <div class="col-md-4 mb-3">
+                        {{ form.expense_date.label(class="form-label") }}
+                        {{ form.expense_date(class="form-control") }}
+
+                        {% for error in form.expense_date.errors %}
+                            <div class="text-danger small mt-1">{{ error }}</div>
+                        {% endfor %}
+                    </div>
+
+                    <!-- No. of Persons -->
+                    <div class="col-md-4 mb-3">
+                        {{ form.persons.label(class="form-label") }}
+                        {{ form.persons(class="form-control", min="1", step="1") }}
+
+                        <div class="form-text">
+                            If you tick participants below, this is set automatically to match how many are ticked.
+                        </div>
+
+                        {% for error in form.persons.errors %}
+                            <div class="text-danger small mt-1">{{ error }}</div>
+                        {% endfor %}
+                    </div>
+
+                    <!-- Days -->
+                    <div class="col-md-4 mb-3">
+                        {{ form.days.label(class="form-label") }}
+                        {{ form.days(class="form-control", min="1") }}
+
+                        {% for error in form.days.errors %}
+                            <div class="text-danger small mt-1">{{ error }}</div>
+                        {% endfor %}
+                    </div>
+                </div>
+
+                <div class="row">
+                    <!-- Amount -->
+                    <div class="col-md-4 mb-3">
+                        {{ form.amount.label(class="form-label") }}
+                        {{ form.amount(class="form-control", min="0.01", step="0.01", placeholder="₹") }}
+
+                        {% for error in form.amount.errors %}
+                            <div class="text-danger small mt-1">{{ error }}</div>
+                        {% endfor %}
+                    </div>
+                </div>
+
+                <!-- Participants -->
+                <div class="mb-3">
+                    {{ form.participants.label(class="form-label") }}
+
+                    {% if form.participants.choices %}
+                        <div class="border rounded p-2" style="max-height: 220px; overflow-y: auto;">
+                            {% for subfield in form.participants %}
+                                <div class="form-check">
+                                    {{ subfield(class="form-check-input") }}
+                                    {{ subfield.label(class="form-check-label") }}
+                                </div>
+                            {% endfor %}
+                        </div>
+                        <div class="form-text">
+                            Leave everyone unchecked to split this evenly across the whole trip party instead.
+                            Travelers marked "Free" are never billed even if ticked.
+                        </div>
+                    {% else %}
+                        <div class="text-muted small">
+                            No travelers logged for this trip yet — this expense will be split evenly
+                            across the whole party until you
+                            <a href="{{ url_for('travelers.create', tour_id=expense.Id_Tour) }}">add travelers</a>.
+                        </div>
+                    {% endif %}
+
+                    {% for error in form.participants.errors %}
+                        <div class="text-danger small mt-1">{{ error }}</div>
+                    {% endfor %}
+                </div>
+
+                <div class="d-flex gap-2 mt-3">
+                    {{ form.submit(class="btn btn-primary", value="Update Expense") }}
+
+                    <a href="{{ url_for('tours.detail', tour_id=expense.Id_Tour) }}"
+                       class="btn btn-outline-secondary">
+                        Cancel
+                    </a>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
