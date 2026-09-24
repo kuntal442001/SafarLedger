@@ -218,20 +218,26 @@
     function parseMoney(text) {
         const lines = text.split('\n').map(x => x.trim()).filter(Boolean);
         const candidates = [];
-        const moneyRe = /(?:₹|rs\.?|inr)?\s*([0-9]{1,3}(?:[, ][0-9]{2,3})*(?:\.\d{1,2})?|[0-9]+(?:\.\d{1,2})?)/ig;
+        // Prefer explicit final-total labels and NEVER let a subtotal win over a total.
+        const totalLabel = /(?:^|\b)(grand\s*total|total\s*(?:amount|due|payable)?|amount\s*due|balance\s*due|net\s*amount|bill\s*amount|invoice\s*amount)\b/i;
+        const subtotalLabel = /\bsub\s*total\b/i;
+        const moneyRe = /(?:₹|rs\.?|inr)?\s*([0-9]{1,3}(?:[, ]\d{2,3})*(?:\.\d{1,2})?|[0-9]+(?:\.\d{1,2})?)/ig;
 
         lines.forEach((line, index) => {
             let match;
             while ((match = moneyRe.exec(line)) !== null) {
-                const raw = match[1].replace(/[ ,]/g, '');
+                const raw = match[1].replace(/[, ]/g, '');
                 const value = Number(raw);
                 if (!Number.isFinite(value) || value <= 0 || value > 100000000) continue;
+
                 const lower = line.toLowerCase();
                 let score = 0;
-                if (/(grand total|total amount|net amount|amount due|balance due|total|payable|bill amount|invoice amount)/i.test(lower)) score += 100;
-                if (/(subtotal|sub total)/i.test(lower)) score += 30;
-                if (/(gst|tax|cgst|sgst|igst|discount|change|phone|mobile|invoice|bill no)/i.test(lower)) score -= 25;
-                if (index < 3) score -= 5;
+                if (totalLabel.test(lower)) score += 1000;
+                if (subtotalLabel.test(lower)) score -= 1000;
+                if (/(gst|tax|cgst|sgst|igst|discount|change|phone|mobile|invoice|bill no)/i.test(lower)) score -= 100;
+                // If several explicit total lines exist, prefer the last one (normally the final payable amount).
+                if (totalLabel.test(lower)) score += index;
+
                 candidates.push({ value, score, index });
             }
         });
@@ -241,42 +247,102 @@
         return candidates[0].value;
     }
 
+    function validDateParts(day, month, year) {
+        day = Number(day); month = Number(month); year = Number(year);
+        if (year < 100) year += 2000;
+        if (month < 1 || month > 12 || day < 1 || day > 31 || year < 2000 || year > 2100) return null;
+        const d = new Date(year, month - 1, day);
+        if (d.getFullYear() !== year || d.getMonth() !== month - 1 || d.getDate() !== day) return null;
+        return `${year}-${String(month).padStart(2,'0')}-${String(day).padStart(2,'0')}`;
+    }
+
+    function parseDateNearLabel(text) {
+        const lines = text.split('\n').map(x => x.trim()).filter(Boolean);
+        for (const line of lines) {
+            if (!/\bdate\b/i.test(line)) continue;
+
+            // Normal dates on the same line.
+            let m = line.match(/\b(\d{1,2})[\/.\-](\d{1,2})[\/.\-](\d{2,4})\b/);
+            if (m) {
+                const parsed = validDateParts(m[1], m[2], m[3]);
+                if (parsed) return parsed;
+            }
+
+            // OCR sometimes inserts spaces or a stray character into a date.
+            // Example from this receipt: "Date e220 952026" for 22-09-2026.
+            const datePart = line.replace(/^.*?\bdate\b/i, '').split(/\b(?:customer|customers|time|table|bill|invoice)\b/i)[0];
+            const digitSource = datePart.replace(/\D/g, '');
+            const dateCandidates = [];
+
+            function tryDateDigits(digits) {
+                if (digits.length !== 8) return;
+                const dayMonthYear = validDateParts(digits.slice(0,2), digits.slice(2,4), digits.slice(4));
+                if (dayMonthYear) dateCandidates.push(dayMonthYear);
+                const yearMonthDay = validDateParts(digits.slice(6), digits.slice(4,6), digits.slice(0,4));
+                if (yearMonthDay) dateCandidates.push(yearMonthDay);
+            }
+
+            // Exact 8-digit dates, e.g. 22092026.
+            for (let i = 0; i <= digitSource.length - 8; i++) {
+                tryDateDigits(digitSource.slice(i, i + 8));
+            }
+
+            // OCR can introduce one extra digit into a date. For a line explicitly
+            // labelled Date, try removing one digit at a time. This handles OCR such
+            // as "Date e220 952026" -> 22092026.
+            if (!dateCandidates.length && digitSource.length >= 9 && digitSource.length <= 11) {
+                for (let removeAt = 0; removeAt < digitSource.length; removeAt++) {
+                    tryDateDigits(digitSource.slice(0, removeAt) + digitSource.slice(removeAt + 1));
+                }
+            }
+
+            // Only use this fuzzy repair when it produces one unambiguous date.
+            // If several dates are possible, leave the field for the user rather
+            // than silently choosing the wrong date.
+            const uniqueDates = [...new Set(dateCandidates)];
+            if (uniqueDates.length === 1) return uniqueDates[0];
+        }
+        return null;
+    }
+
     function parseDate(text) {
+        // First look specifically at a line labelled Date. This avoids accidentally
+        // choosing the invoice number, GSTIN, or another date-like value.
+        const labelled = parseDateNearLabel(text);
+        if (labelled) return labelled;
+
         const patterns = [
-            /\b(\d{1,2})[\/-](\d{1,2})[\/-](\d{2,4})\b/,
-            /\b(\d{4})[\/-](\d{1,2})[\/-](\d{1,2})\b/,
+            /\b(\d{4})[\/\-\.](\d{1,2})[\/\-\.](\d{1,2})\b/,
+            /\b(\d{1,2})[\/\-\.](\d{1,2})[\/\-\.](\d{2,4})\b/,
             /\b(\d{1,2})\s*[- ]\s*(jan|feb|mar|apr|may|jun|jul|aug|sep|sept|oct|nov|dec)[a-z]*\s*(\d{2,4})?\b/i,
             /\b(jan|feb|mar|apr|may|jun|jul|aug|sep|sept|oct|nov|dec)[a-z]*\s+(\d{1,2}),?\s+(\d{2,4})\b/i
         ];
         const months = {jan:1,feb:2,mar:3,apr:4,may:5,jun:6,jul:7,aug:8,sep:9,sept:9,oct:10,nov:11,dec:12};
 
-        let m = text.match(patterns[1]);
-        if (m) return `${m[1]}-${String(m[2]).padStart(2,'0')}-${String(m[3]).padStart(2,'0')}`;
-
-        m = text.match(patterns[0]);
+        let m = text.match(patterns[0]);
         if (m) {
-            let year = Number(m[3]);
-            if (year < 100) year += 2000;
-            const day = Number(m[1]), month = Number(m[2]);
-            if (month >= 1 && month <= 12 && day >= 1 && day <= 31) {
-                return `${year}-${String(month).padStart(2,'0')}-${String(day).padStart(2,'0')}`;
-            }
+            const parsed = validDateParts(m[3], m[2], m[1]);
+            if (parsed) return parsed;
         }
-
+        m = text.match(patterns[1]);
+        if (m) {
+            const parsed = validDateParts(m[1], m[2], m[3]);
+            if (parsed) return parsed;
+        }
         m = text.match(patterns[2]);
         if (m) {
             const day = Number(m[1]);
             const month = months[m[2].toLowerCase()];
-            const year = m[3] ? (Number(m[3]) < 100 ? 2000 + Number(m[3]) : Number(m[3])) : new Date().getFullYear();
-            return `${year}-${String(month).padStart(2,'0')}-${String(day).padStart(2,'0')}`;
+            const year = m[3] ? Number(m[3]) : new Date().getFullYear();
+            const parsed = validDateParts(day, month, year);
+            if (parsed) return parsed;
         }
-
         m = text.match(patterns[3]);
         if (m) {
             const month = months[m[1].toLowerCase()];
             const day = Number(m[2]);
-            const year = Number(m[3]) < 100 ? 2000 + Number(m[3]) : Number(m[3]);
-            return `${year}-${String(month).padStart(2,'0')}-${String(day).padStart(2,'0')}`;
+            const parsed = validDateParts(day, month, Number(m[3]));
+            if (parsed) return parsed;
         }
         return null;
     }
@@ -343,7 +409,7 @@
         const description = guessDescription(text);
         const amount = parseMoney(text);
         const date = parseDate(text);
-        const persons = parseCount(text, 'guests?|persons?|pax|people|travellers?|travelers?|adults?');
+        const persons = parseCount(text, 'guests?|guest|customers?|customer|persons?|pax|people|travellers?|travelers?|adults?|occupants?');
         const days = parseCount(text, 'nights?|days?');
 
         if (type && !fields.type.value.trim()) fields.type.value = type.charAt(0).toUpperCase() + type.slice(1);
@@ -357,6 +423,25 @@
         const found = [amount !== null, !!date, !!description, !!type, categoryFound].filter(Boolean).length;
         result.className = 'alert mt-3 mb-0 ' + (found >= 3 ? 'alert-success' : 'alert-warning');
         result.innerHTML = '<strong>' + (found >= 3 ? 'Bill scanned successfully.' : 'Bill scanned, but please review the extracted fields.') + '</strong> ' + found + ' key fields were detected. You can edit anything before saving.';
+    }
+
+    async function preprocessReceiptImage(file) {
+        const bitmap = await createImageBitmap(file);
+        const scale = 1.8;
+        const canvas = document.createElement('canvas');
+        canvas.width = Math.round(bitmap.width * scale);
+        canvas.height = Math.round(bitmap.height * scale);
+        const ctx = canvas.getContext('2d', { willReadFrequently: true });
+        ctx.imageSmoothingEnabled = true;
+        ctx.imageSmoothingQuality = 'high';
+        // Enlarging + grayscale/contrast makes small receipt text and dates much
+        // easier for Tesseract to recognize, especially from phone photos.
+        ctx.filter = 'grayscale(1) contrast(1.35)';
+        ctx.drawImage(bitmap, 0, 0, canvas.width, canvas.height);
+        bitmap.close();
+        return await new Promise((resolve, reject) => {
+            canvas.toBlob(blob => blob ? resolve(blob) : reject(new Error('Could not prepare receipt image.')), 'image/png');
+        });
     }
 
     input.addEventListener('change', async function () {
@@ -387,7 +472,14 @@
                     }
                 }
             });
-            const ret = await worker.recognize(file);
+            // PSM 6 is much better for receipts with columns such as
+            // Bill No / Date / Customer / Total.
+            await worker.setParameters({
+                tessedit_pageseg_mode: '6',
+                preserve_interword_spaces: '1'
+            });
+            const ocrImage = await preprocessReceiptImage(file);
+            const ret = await worker.recognize(ocrImage);
             await worker.terminate();
 
             const text = normalise(ret.data.text || '');
