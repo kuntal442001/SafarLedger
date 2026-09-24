@@ -132,3 +132,8 @@ SafarLedger uses a simple phone-number authentication flow:
 - Login: phone number and password.
 - No email verification, OTP, or email password-reset flow is required.
 - Passwords are stored as secure hashes, never as plain text.
+
+
+### Saved Bills / Receipts
+
+Receipt images are stored directly in PostgreSQL (NeonDB) as binary data and served only through an authenticated expense receipt route. JPG, PNG, WEBP and GIF images up to 4 MB are supported.

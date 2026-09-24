@@ -1,10 +1,36 @@
-from flask import render_template, redirect, url_for, flash
+from flask import render_template, redirect, url_for, flash, Response, abort
 from flask_login import login_required, current_user
+from werkzeug.utils import secure_filename
 
 from app.extensions import db
 from app.models import Tour, Expense, Traveler
 from app.expenses import expenses
 from app.expenses.forms import ExpenseForm
+
+ALLOWED_RECEIPT_TYPES = {"image/jpeg", "image/png", "image/webp", "image/gif"}
+MAX_RECEIPT_BYTES = 4 * 1024 * 1024
+
+def _read_receipt(file_storage):
+    """Read and validate a receipt image for storage in PostgreSQL."""
+    if not file_storage or not file_storage.filename:
+        return None
+
+    content_type = (file_storage.mimetype or "").lower()
+    if content_type not in ALLOWED_RECEIPT_TYPES:
+        raise ValueError("Receipt must be a JPG, PNG, WEBP or GIF image.")
+
+    data = file_storage.read()
+    if not data:
+        raise ValueError("The selected receipt is empty.")
+    if len(data) > MAX_RECEIPT_BYTES:
+        raise ValueError("Receipt image must be smaller than 4 MB.")
+
+    safe_name = secure_filename(file_storage.filename) or "receipt"
+    return {
+        "image": data,
+        "filename": safe_name,
+        "content_type": content_type,
+    }
 
 
 # ---------------------------------
@@ -23,6 +49,12 @@ def create(tour_id):
     form = ExpenseForm(tour=tour)
 
     if form.validate_on_submit():
+        try:
+            receipt = _read_receipt(form.receipt_file.data)
+        except ValueError as exc:
+            flash(str(exc), "danger")
+            return render_template("expenses/create.html", form=form, tour=tour)
+        
         selected_participants = (
             Traveler.query
             .filter(
@@ -44,7 +76,10 @@ def create(tour_id):
             persons=len(selected_participants) if selected_participants else form.persons.data,
             expense_date=form.expense_date.data,
             days=form.days.data,
-            amount=form.amount.data
+            amount=form.amount.data,
+            receipt_image=receipt["image"] if receipt else None,
+            receipt_filename=receipt["filename"] if receipt else None,
+            receipt_content_type=receipt["content_type"] if receipt else None,
         )
 
         if selected_participants:
@@ -86,6 +121,14 @@ def edit(expense_id):
         form.participants.data = [p.id for p in expense.participants]
 
     if form.validate_on_submit():
+        new_receipt = None
+        try:
+            if form.receipt_file.data and form.receipt_file.data.filename:
+                new_receipt = _read_receipt(form.receipt_file.data)
+        except ValueError as exc:
+            flash(str(exc), "danger")
+            return render_template("expenses/edit.html", form=form, expense=expense)
+
         selected_participants = (
             Traveler.query
             .filter(
@@ -108,6 +151,11 @@ def edit(expense_id):
         expense.amount = form.amount.data
         expense.participants = selected_participants
 
+        if new_receipt:
+            expense.receipt_image = new_receipt["image"]
+            expense.receipt_filename = new_receipt["filename"]
+            expense.receipt_content_type = new_receipt["content_type"]
+
         db.session.commit()
 
         flash("Expense updated successfully!", "success")
@@ -118,6 +166,35 @@ def edit(expense_id):
         form=form,
         expense=expense
     )
+
+
+# ---------------------------------
+# View original receipt
+# ---------------------------------
+
+@expenses.route("/<int:expense_id>/receipt", methods=["GET"])
+@login_required
+def receipt(expense_id):
+    expense = (
+        Expense.query
+        .join(Tour, Expense.Id_Tour == Tour.id)
+        .filter(
+            Expense.id_Exp == expense_id,
+            Tour.user_id == current_user.id
+        )
+        .first_or_404()
+    )
+
+    if not expense.receipt_image:
+        abort(404)
+
+    headers = {
+        "Content-Type": expense.receipt_content_type or "application/octet-stream",
+        "Content-Disposition": f'inline; filename="{expense.receipt_filename or "receipt"}"',
+        "X-Content-Type-Options": "nosniff",
+        "Cache-Control": "private, no-store",
+    }
+    return Response(bytes(expense.receipt_image), headers=headers)
 
 
 # ---------------------------------
@@ -138,7 +215,6 @@ def delete(expense_id):
     )
 
     tour_id = expense.Id_Tour
-
     db.session.delete(expense)
     db.session.commit()
 

@@ -10,7 +10,7 @@
             <h2 class="mb-1">✏️ Edit Expense</h2>
             <p class="text-muted mb-4">For trip: {{ expense.tour.tour_name }}</p>
 
-            <form method="POST">
+            <form method="POST" enctype="multipart/form-data">
                 {{ form.hidden_tag() }}
 
                 <!-- Category -->
@@ -89,6 +89,22 @@
                             <div class="text-danger small mt-1">{{ error }}</div>
                         {% endfor %}
                     </div>
+                </div>
+
+                <!-- Receipt storage: the same image used by the OCR scanner is submitted with the expense. -->
+                <div class="mb-4">
+                    {{ form.receipt_file.label(class="form-label") }}
+                    {{ form.receipt_file(class="form-control", accept="image/jpeg,image/png,image/webp,image/gif", capture="environment") }}
+                    <div class="form-text">Upload a new bill to replace the saved receipt, or leave this empty to keep the current one.</div>
+                    {% if expense is defined and expense.receipt_image %}
+                        <div class="mt-2">
+                            <a href="{{ url_for('expenses.receipt', expense_id=expense.id_Exp) }}" target="_blank" rel="noopener" class="btn btn-outline-secondary btn-sm">🧾 View saved bill</a>
+                            <span class="text-muted small ms-2">{{ expense.receipt_filename or 'Saved receipt' }}</span>
+                        </div>
+                    {% endif %}
+                    {% for error in form.receipt_file.errors %}
+                        <div class="text-danger small mt-1">{{ error }}</div>
+                    {% endfor %}
                 </div>
 
                 <!-- Participants -->

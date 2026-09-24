@@ -355,6 +355,9 @@
                                         <td class="text-end">{{ expense.days }}</td>
                                         <td class="text-end">₹{{ "{:,.2f}".format(expense.amount) }}</td>
                                         <td class="text-end">
+                                            {% if expense.receipt_image %}
+                                                <a href="{{ url_for('expenses.receipt', expense_id=expense.id_Exp) }}" target="_blank" rel="noopener" class="btn btn-outline-secondary btn-sm">🧾 Bill</a>
+                                            {% endif %}
                                             <a href="{{ url_for('expenses.edit', expense_id=expense.id_Exp) }}"
                                                class="btn btn-outline-primary btn-sm">
                                                 Edit

@@ -59,3 +59,12 @@ The production Neon database used by this project is in AWS ap-southeast-1
 round trips stay in the same general region. Redeploy after changing the region.
 
 The Flask entry point is the root `index.py`, which exposes `app = create_app()` to Vercel's Python runtime.
+
+
+## Receipt / Bill Storage
+
+SafarLedger stores uploaded bill images directly in **Neon PostgreSQL** as binary (`BYTEA`) data. The authenticated Flask route streams the saved receipt back only to the user who owns the expense.
+
+No Vercel Blob store or `BLOB_READ_WRITE_TOKEN` is required. The receipt image, filename, and content type are stored with the expense in NeonDB.
+
+The current server-upload flow limits receipt images to 4 MB, which stays below Vercel Functions' 4.5 MB request-body limit.

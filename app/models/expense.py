@@ -56,6 +56,24 @@ class Expense(db.Model):
         nullable=False
     )
 
+    # Original receipt/bill stored directly in PostgreSQL (Neon) as binary data.
+    # Only authenticated users who own the trip can access it through the
+    # receipt route. Filename and MIME type are kept for correct display.
+    receipt_image = db.Column(
+        db.LargeBinary,
+        nullable=True
+    )
+
+    receipt_filename = db.Column(
+        db.String(255),
+        nullable=True
+    )
+
+    receipt_content_type = db.Column(
+        db.String(100),
+        nullable=True
+    )
+
     created_at = db.Column(
         db.DateTime(timezone=True),
         default=lambda: datetime.now(timezone.utc),
