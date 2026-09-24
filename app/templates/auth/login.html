@@ -41,6 +41,14 @@
             margin-bottom: 30px;
         }
 
+        .logo img {
+            width: 300px;
+            max-width: 100%;
+            height: auto;
+            display: block;
+            margin: 0 auto 12px;
+        }
+
         .logo h1 {
             font-size: 30px;
             margin-bottom: 8px;
@@ -163,7 +171,10 @@
     <div class="card">
 
         <div class="logo">
-            <h1>SafarLedger</h1>
+            <img
+                src="{{ url_for('static', filename='images/safar-logo-white.png') }}"
+                alt="Safar"
+            >
             <span>Welcome back to your travel ledger.</span>
         </div>
 

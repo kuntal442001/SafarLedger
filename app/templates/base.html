@@ -25,6 +25,15 @@
     rel="stylesheet"
 >
 
+
+    <style>
+        .navbar-logo {
+            width: 150px;
+            height: auto;
+            display: block;
+        }
+    </style>
+
 </head>
 
 <body class="bg-light">
@@ -37,9 +46,9 @@
         <a class="navbar-brand"
            href="{{ url_for('tours.list_tours') }}">
             <img
-                src="{{ url_for('static', filename='images/logo.png') }}"
-                alt="SafarLedger"
-                height="42"
+                src="{{ url_for('static', filename='images/safar-logo.png') }}"
+                alt="Safar"
+                class="navbar-logo"
             >
         </a>
 
