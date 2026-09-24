@@ -180,17 +180,18 @@
             </div>
 
 
-            <!-- Email -->
+            <!-- Phone Number -->
             <div class="form-group">
 
-                {{ form.email.label }}
+                {{ form.phone.label }}
 
-                {{ form.email(
-                    placeholder="Enter your email",
-                    autocomplete="email"
+                {{ form.phone(
+                    placeholder="Enter your phone number",
+                    autocomplete="tel",
+                    inputmode="tel"
                 ) }}
 
-                {% for error in form.email.errors %}
+                {% for error in form.phone.errors %}
                     <div class="errors">
                         {{ error }}
                     </div>

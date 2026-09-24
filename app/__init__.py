@@ -1,7 +1,7 @@
 from flask import Flask, redirect, url_for
 
 from app.config import Config
-from app.extensions import db, migrate, login_manager, limiter, mail
+from app.extensions import db, migrate, login_manager, limiter
 
 
 def create_app():
@@ -23,7 +23,6 @@ def create_app():
     migrate.init_app(app, db)
     login_manager.init_app(app)
     limiter.init_app(app)
-    mail.init_app(app)
 
     # ---------------------------------------------------------
     # Import models

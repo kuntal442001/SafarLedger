@@ -122,3 +122,13 @@ The weather section shows:
 - Forecast guidance for the trip dates
 
 The external weather service is called by the Flask server rather than directly by the browser.
+
+
+## Authentication
+
+SafarLedger uses a simple phone-number authentication flow:
+
+- Registration: name, phone number, password, and confirm password.
+- Login: phone number and password.
+- No email verification, OTP, or email password-reset flow is required.
+- Passwords are stored as secure hashes, never as plain text.

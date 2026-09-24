@@ -194,18 +194,19 @@
             {{ form.hidden_tag() }}
 
 
-            <!-- Email -->
+            <!-- Phone Number -->
 
             <div class="form-group">
 
-                {{ form.email.label }}
+                {{ form.phone.label }}
 
-                {{ form.email(
-                    placeholder="Enter your email",
-                    autocomplete="email"
+                {{ form.phone(
+                    placeholder="Enter your phone number",
+                    autocomplete="tel",
+                    inputmode="tel"
                 ) }}
 
-                {% for error in form.email.errors %}
+                {% for error in form.phone.errors %}
 
                     <div class="errors">
                         {{ error }}
@@ -238,20 +239,7 @@
             </div>
 
 
-            <!-- Remember me / Forgot password -->
 
-            <div class="options-row">
-
-                <label class="remember-me">
-                    {{ form.remember() }}
-                    Remember me
-                </label>
-
-                <a href="{{ url_for('auth.forgot_password') }}">
-                    Forgot password?
-                </a>
-
-            </div>
 
 
             <!-- Submit -->

@@ -22,7 +22,6 @@ Optional:
 - `WEATHER_API_KEY`
 - `SESSION_COOKIE_SECURE=true`
 - `RATELIMIT_STORAGE_URI` (use a persistent Redis/Upstash URL for production rate limiting)
-- `MAIL_SERVER`, `MAIL_PORT`, `MAIL_USE_TLS`, `MAIL_USERNAME`, `MAIL_PASSWORD`, `MAIL_DEFAULT_SENDER`
 
 Do not upload `.env`; production secrets belong in Vercel Environment Variables.
 

@@ -74,17 +74,3 @@ class Config:
 
     LOGIN_MAX_ATTEMPTS = int(os.getenv("LOGIN_MAX_ATTEMPTS", 5))
     LOGIN_LOCKOUT_MINUTES = int(os.getenv("LOGIN_LOCKOUT_MINUTES", 15))
-
-    # ---------------------------------------------------------
-    # Mail (for email confirmation + password reset links)
-    # ---------------------------------------------------------
-
-    # If MAIL_SERVER is left unset, the app does not fail - it falls back
-    # to logging the confirmation/reset link and showing it directly to
-    # the user, so the feature still works with zero mail setup.
-    MAIL_SERVER = os.getenv("MAIL_SERVER")
-    MAIL_PORT = int(os.getenv("MAIL_PORT", 587))
-    MAIL_USE_TLS = os.getenv("MAIL_USE_TLS", "true").lower() == "true"
-    MAIL_USERNAME = os.getenv("MAIL_USERNAME")
-    MAIL_PASSWORD = os.getenv("MAIL_PASSWORD")
-    MAIL_DEFAULT_SENDER = os.getenv("MAIL_DEFAULT_SENDER") or MAIL_USERNAME

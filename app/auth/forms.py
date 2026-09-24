@@ -1,10 +1,11 @@
 from flask_wtf import FlaskForm
-from wtforms import BooleanField, StringField, PasswordField, SubmitField
-from wtforms.validators import (
-    DataRequired,
-    Email,
-    EqualTo,
-    Length
+from wtforms import StringField, PasswordField, SubmitField
+from wtforms.validators import DataRequired, EqualTo, Length, Regexp
+
+
+PHONE_VALIDATOR = Regexp(
+    r"^\+?[0-9]{7,15}$",
+    message="Enter a valid phone number (7-15 digits, with an optional + prefix)."
 )
 
 
@@ -18,12 +19,12 @@ class RegistrationForm(FlaskForm):
         ]
     )
 
-    email = StringField(
-        "Email",
+    phone = StringField(
+        "Phone Number",
         validators=[
             DataRequired(),
-            Email(),
-            Length(max=255)
+            Length(min=7, max=16),
+            PHONE_VALIDATOR
         ]
     )
 
@@ -51,12 +52,12 @@ class RegistrationForm(FlaskForm):
 
 class LoginForm(FlaskForm):
 
-    email = StringField(
-        "Email",
+    phone = StringField(
+        "Phone Number",
         validators=[
             DataRequired(),
-            Email(),
-            Length(max=255)
+            Length(min=7, max=16),
+            PHONE_VALIDATOR
         ]
     )
 
@@ -67,47 +68,4 @@ class LoginForm(FlaskForm):
         ]
     )
 
-    remember = BooleanField(
-        "Remember me",
-        default=False
-    )
-
     submit = SubmitField("Login")
-
-
-class ForgotPasswordForm(FlaskForm):
-
-    email = StringField(
-        "Email",
-        validators=[
-            DataRequired(),
-            Email(),
-            Length(max=255)
-        ]
-    )
-
-    submit = SubmitField("Send Reset Link")
-
-
-class ResetPasswordForm(FlaskForm):
-
-    password = PasswordField(
-        "New Password",
-        validators=[
-            DataRequired(),
-            Length(min=8, max=128)
-        ]
-    )
-
-    confirm_password = PasswordField(
-        "Confirm New Password",
-        validators=[
-            DataRequired(),
-            EqualTo(
-                "password",
-                message="Passwords must match."
-            )
-        ]
-    )
-
-    submit = SubmitField("Reset Password")

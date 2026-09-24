@@ -11,8 +11,6 @@ dependencies = [
   "WTForms",
   "psycopg2-binary",
   "python-dotenv",
-  "email-validator",
   "reportlab",
   "Flask-Limiter",
-  "Flask-Mail",
 ]
