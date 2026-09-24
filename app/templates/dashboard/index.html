@@ -5,289 +5,347 @@
 {% block content %}
 
 <style>
-* { box-sizing: border-box; }
+
+    * {
+        box-sizing: border-box;
+    }
+
+    .dashboard-container {
+        max-width: 1250px;
+        margin: 0 auto;
+        padding: 45px 30px;
+    }
+
+    /* =====================================================
+       WELCOME
+    ===================================================== */
+
+    .welcome {
+        margin-bottom: 35px;
+    }
+
+    .welcome h1 {
+        font-size: 32px;
+        margin-bottom: 8px;
+    }
+
+    .welcome p {
+        color: #6c757d;
+        font-size: 15px;
+    }
+
+
+    /* =====================================================
+       STATISTICS
+    ===================================================== */
+
+    .stats {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 20px;
+        margin-bottom: 35px;
+    }
+
+    .stat-card {
+        background: #ffffff;
+        border: 1px solid #dee2e6;
+        border-radius: 14px;
+        padding: 25px;
+
+        transition:
+            transform 0.2s ease,
+            border-color 0.2s ease;
+    }
+
+    .stat-card:hover {
+        transform: translateY(-3px);
+        border-color: #ced4da;
+    }
+
+    .stat-title {
+        color: #6c757d;
+        font-size: 14px;
+        margin-bottom: 12px;
+    }
+
+    .stat-value {
+        font-size: 27px;
+        font-weight: bold;
+        word-break: break-word;
+    }
+
+    .stat-description {
+        margin-top: 8px;
+        color: #6c757d;
+        font-size: 12px;
+    }
+
+
+    /* =====================================================
+       CONTENT GRID
+    ===================================================== */
+
+    .content-grid {
+        display: grid;
+        grid-template-columns: 2fr 1fr;
+        gap: 25px;
+    }
+
+    .card {
+        background: #ffffff;
+        border: 1px solid #dee2e6;
+        border-radius: 14px;
+        padding: 25px;
+    }
+
+    .card-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 22px;
+    }
+
+    .card-header h2 {
+        font-size: 19px;
+    }
+
+
+    /* =====================================================
+       RECENT TRIPS
+    ===================================================== */
+
+    .trip-list {
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+    }
+
+    .trip {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+
+        padding: 15px;
+
+        border: 1px solid #dee2e6;
+        border-radius: 9px;
+
+        background: #ffffff;
+    }
+
+    .trip-info h3 {
+        font-size: 15px;
+        margin-bottom: 5px;
+    }
+
+    .trip-info p {
+        color: #6c757d;
+        font-size: 13px;
+    }
+
+    .trip-budget {
+        text-align: right;
+    }
+
+    .trip-budget strong {
+        display: block;
+        font-size: 14px;
+    }
+
+    .trip-budget span {
+        color: #6c757d;
+        font-size: 12px;
+    }
+
+
+    /* =====================================================
+       EMPTY STATE
+    ===================================================== */
+
+    .empty-state {
+        text-align: center;
+        padding: 45px 20px;
+    }
+
+    .empty-icon {
+        font-size: 42px;
+        margin-bottom: 15px;
+    }
+
+    .empty-state h3 {
+        font-size: 18px;
+        margin-bottom: 8px;
+    }
+
+    .empty-state p {
+        color: #6c757d;
+        font-size: 14px;
+        margin-bottom: 22px;
+    }
+
+
+    /* =====================================================
+       QUICK ACTIONS
+    ===================================================== */
+
+    .actions {
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+    }
+
+    .action {
+        display: block;
+
+        padding: 15px;
+
+        border: 1px solid #dee2e6;
+        border-radius: 9px;
+
+        color: #495057;
+        text-decoration: none;
+
+        font-size: 14px;
+
+        transition:
+            background 0.2s ease,
+            border-color 0.2s ease;
+    }
+
+    .action:hover {
+        background: #f8f9fa;
+        border-color: #38bdf8;
+        color: #212529;
+    }
+
+
+    /* =====================================================
+       BUTTON
+    ===================================================== */
+
+    .primary-btn {
+        display: inline-block;
+
+        padding: 11px 18px;
+
+        background: #0d2f6b;
+        color: #ffffff;
+
+        border-radius: 8px;
+
+        text-decoration: none;
+        font-size: 14px;
+        font-weight: bold;
+    }
+
+    .primary-btn:hover {
+        background: #081f4a;
+    }
+
+
+    /* =====================================================
+       RESPONSIVE
+    ===================================================== */
+
+    @media (max-width: 900px) {
+
+        /*
+         * Tablet / Mobile order:
+         *
+         * Welcome
+         * Quick Actions
+         * Statistics
+         * Recent Trips
+         */
 
         .dashboard-container {
-            max-width: 1250px;
-            margin: 0 auto;
-            padding: 45px 30px;
+            display: grid;
+            grid-template-columns: 1fr;
         }
 
-/* =====================================================
-           WELCOME
-        ===================================================== */
-
         .welcome {
-            margin-bottom: 35px;
+            order: 1;
+        }
+
+        /*
+         * Remove the content-grid wrapper from the visual
+         * layout so Quick Actions and Recent Trips can
+         * participate directly in the dashboard grid.
+         */
+        .content-grid {
+            display: contents;
+        }
+
+        /*
+         * Quick Actions
+         */
+        .content-grid > .card:last-child {
+            order: 2;
+        }
+
+        /*
+         * Statistics
+         */
+        .stats {
+            order: 3;
+            grid-template-columns: repeat(2, 1fr);
+        }
+
+        /*
+         * Recent Trips
+         */
+        .content-grid > .card:first-child {
+            order: 4;
+        }
+    }
+
+
+    /* =====================================================
+       MOBILE
+    ===================================================== */
+
+    @media (max-width: 600px) {
+
+        .navbar {
+            padding: 0 20px;
+        }
+
+        .user-name {
+            display: none;
+        }
+
+        .container {
+            padding: 30px 18px;
+        }
+
+        .dashboard-container {
+            padding: 30px 18px;
         }
 
         .welcome h1 {
-            font-size: 32px;
-            margin-bottom: 8px;
+            font-size: 26px;
         }
 
-        .welcome p {
-            color: #6c757d;
-            font-size: 15px;
-        }
-
-
-        /* =====================================================
-           STATISTICS
-        ===================================================== */
-
+        /*
+         * Statistics become one column on phones.
+         */
         .stats {
-            display: grid;
-            grid-template-columns: repeat(4, 1fr);
-            gap: 20px;
-            margin-bottom: 35px;
-        }
-
-        .stat-card {
-            background: #ffffff;
-            border: 1px solid #dee2e6;
-            border-radius: 14px;
-            padding: 25px;
-
-            transition: transform 0.2s ease,
-                        border-color 0.2s ease;
-        }
-
-        .stat-card:hover {
-            transform: translateY(-3px);
-            border-color: #ced4da;
-        }
-
-        .stat-title {
-            color: #6c757d;
-            font-size: 14px;
-            margin-bottom: 12px;
-        }
-
-        .stat-value {
-            font-size: 27px;
-            font-weight: bold;
-            word-break: break-word;
-        }
-
-        .stat-description {
-            margin-top: 8px;
-            color: #6c757d;
-            font-size: 12px;
-        }
-
-
-        /* =====================================================
-           CONTENT GRID
-        ===================================================== */
-
-        .content-grid {
-            display: grid;
-            grid-template-columns: 2fr 1fr;
-            gap: 25px;
-        }
-
-        .card {
-            background: #ffffff;
-            border: 1px solid #dee2e6;
-            border-radius: 14px;
-            padding: 25px;
-        }
-
-        .card-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 22px;
-        }
-
-        .card-header h2 {
-            font-size: 19px;
-        }
-
-
-        /* =====================================================
-           RECENT TRIPS
-        ===================================================== */
-
-        .trip-list {
-            display: flex;
-            flex-direction: column;
-            gap: 12px;
+            grid-template-columns: 1fr;
         }
 
         .trip {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-
-            padding: 15px;
-
-            border: 1px solid #dee2e6;
-            border-radius: 9px;
-
-            background: #ffffff;
-        }
-
-        .trip-info h3 {
-            font-size: 15px;
-            margin-bottom: 5px;
-        }
-
-        .trip-info p {
-            color: #6c757d;
-            font-size: 13px;
+            align-items: flex-start;
+            gap: 15px;
         }
 
         .trip-budget {
-            text-align: right;
+            text-align: left;
         }
 
-        .trip-budget strong {
-            display: block;
-            font-size: 14px;
-        }
+    }
 
-        .trip-budget span {
-            color: #6c757d;
-            font-size: 12px;
-        }
-
-
-        /* =====================================================
-           EMPTY STATE
-        ===================================================== */
-
-        .empty-state {
-            text-align: center;
-            padding: 45px 20px;
-        }
-
-        .empty-icon {
-            font-size: 42px;
-            margin-bottom: 15px;
-        }
-
-        .empty-state h3 {
-            font-size: 18px;
-            margin-bottom: 8px;
-        }
-
-        .empty-state p {
-            color: #6c757d;
-            font-size: 14px;
-            margin-bottom: 22px;
-        }
-
-
-        /* =====================================================
-           QUICK ACTIONS
-        ===================================================== */
-
-        .actions {
-            display: flex;
-            flex-direction: column;
-            gap: 12px;
-        }
-
-        .action {
-            display: block;
-
-            padding: 15px;
-
-            border: 1px solid #dee2e6;
-            border-radius: 9px;
-
-            color: #495057;
-            text-decoration: none;
-
-            font-size: 14px;
-
-            transition: background 0.2s ease,
-                        border-color 0.2s ease;
-        }
-
-        .action:hover {
-            background: #f8f9fa;
-            border-color: #38bdf8;
-            color: #212529;
-        }
-
-
-        /* =====================================================
-           BUTTON
-        ===================================================== */
-
-        .primary-btn {
-            display: inline-block;
-
-            padding: 11px 18px;
-
-            background: #0d2f6b;
-            color: #ffffff;
-
-            border-radius: 8px;
-
-            text-decoration: none;
-            font-size: 14px;
-            font-weight: bold;
-        }
-
-        .primary-btn:hover {
-            background: #081f4a;
-        }
-
-
-        /* =====================================================
-           RESPONSIVE
-        ===================================================== */
-
-        @media (max-width: 900px) {
-
-            .stats {
-                grid-template-columns: repeat(2, 1fr);
-            }
-
-            .content-grid {
-                grid-template-columns: 1fr;
-            }
-        }
-
-
-        @media (max-width: 600px) {
-
-            .navbar {
-                padding: 0 20px;
-            }
-
-            .user-name {
-                display: none;
-            }
-
-            .container {
-                padding: 30px 18px;
-            }
-
-            .welcome h1 {
-                font-size: 26px;
-            }
-
-            .stats {
-                grid-template-columns: 1fr;
-            }
-
-            .trip {
-                align-items: flex-start;
-                gap: 15px;
-            }
-
-            .trip-budget {
-                text-align: left;
-            }
-        }
-
-    
 </style>
+
 
 <main class="dashboard-container">
 
@@ -307,7 +365,6 @@
         </p>
 
     </section>
-
 
 
     <!-- =================================================
@@ -395,7 +452,6 @@
     </section>
 
 
-
     <!-- =================================================
          CONTENT
     ================================================= -->
@@ -424,7 +480,11 @@
 
                     {% for trip in recent_trips %}
 
-                        <a href="{{ url_for('tours.detail', tour_id=trip.id) }}" class="trip" style="text-decoration: none; color: inherit;">
+                        <a
+                            href="{{ url_for('tours.detail', tour_id=trip.id) }}"
+                            class="trip"
+                            style="text-decoration: none; color: inherit;"
+                        >
 
                             <div class="trip-info">
 
@@ -437,9 +497,13 @@
                                 </p>
 
                                 <p>
+
                                     {{ trip.start_date.strftime("%d %b %Y") }}
+
                                     —
+
                                     {{ trip.end_date.strftime("%d %b %Y") }}
+
                                 </p>
 
                             </div>
@@ -463,7 +527,9 @@
 
                 </div>
 
+
             {% else %}
+
 
                 <div class="empty-state">
 
@@ -489,10 +555,10 @@
 
                 </div>
 
+
             {% endif %}
 
         </div>
-
 
 
         <!-- =================================================
@@ -519,12 +585,14 @@
                     🧳 &nbsp; Create a Trip
                 </a>
 
+
                 <a
                     href="{{ url_for('tours.list_tours') }}"
                     class="action"
                 >
                     💰 &nbsp; Add Expense to a Trip
                 </a>
+
 
                 <a
                     href="{{ url_for('tours.list_tours') }}"
@@ -536,6 +604,7 @@
             </div>
 
         </div>
+
 
     </section>
 
