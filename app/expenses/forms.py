@@ -1,24 +1,9 @@
 from datetime import date
 
 from flask_wtf import FlaskForm
+from wtforms import StringField, SelectField, SelectMultipleField, DecimalField, IntegerField, DateField, SubmitField, FileField
+from wtforms.validators import DataRequired, Length, NumberRange, Optional
 from flask_wtf.file import FileAllowed
-
-from wtforms import (
-    StringField,
-    SelectField,
-    SelectMultipleField,
-    DecimalField,
-    IntegerField,
-    DateField,
-    SubmitField,
-    FileField,
-)
-from wtforms.validators import (
-    DataRequired,
-    Length,
-    NumberRange,
-    Optional,
-)
 from wtforms.widgets import ListWidget, CheckboxInput
 
 from app.models import MastCategory
@@ -29,9 +14,7 @@ class ExpenseForm(FlaskForm):
     Id_Cat = SelectField(
         "Category",
         coerce=int,
-        validators=[
-            DataRequired(message="Please select a category.")
-        ]
+        validators=[DataRequired(message="Please select a category.")]
     )
 
     expense_type = StringField(
@@ -54,10 +37,7 @@ class ExpenseForm(FlaskForm):
         "No. of Persons",
         validators=[
             DataRequired(),
-            NumberRange(
-                min=1,
-                message="No. of persons must be at least 1."
-            )
+            NumberRange(min=1, message="No. of persons must be at least 1.")
         ],
         default=1
     )
@@ -72,10 +52,7 @@ class ExpenseForm(FlaskForm):
         "Days",
         validators=[
             DataRequired(),
-            NumberRange(
-                min=1,
-                message="Days must be at least 1."
-            )
+            NumberRange(min=1, message="Days must be at least 1.")
         ],
         default=1
     )
@@ -84,10 +61,7 @@ class ExpenseForm(FlaskForm):
         "Amount",
         validators=[
             DataRequired(),
-            NumberRange(
-                min=0.01,
-                message="Amount must be greater than 0."
-            )
+            NumberRange(min=0.01, message="Amount must be greater than 0.")
         ],
         places=2
     )
@@ -112,7 +86,6 @@ class ExpenseForm(FlaskForm):
     # Non-chargeable travelers (age < 10) can still be ticked
     # for record-keeping, but they're never actually billed.
     # ---------------------------------------------------------
-
     participants = SelectMultipleField(
         "Participants",
         coerce=int,
@@ -128,22 +101,16 @@ class ExpenseForm(FlaskForm):
 
         self.Id_Cat.choices = [
             (c.Id_Cat, c.Cat_Desc)
-            for c in MastCategory.query.order_by(
-                MastCategory.Cat_Desc
-            ).all()
+            for c in MastCategory.query.order_by(MastCategory.Cat_Desc).all()
         ]
 
         if tour is not None:
             self.participants.choices = [
                 (
                     t.id,
-                    f"{t.name} "
-                    f"({t.age}{'' if t.is_chargeable else ' - Free'})"
+                    f"{t.name} ({t.age}{'' if t.is_chargeable else ' - Free'})"
                 )
-                for t in sorted(
-                    tour.travelers,
-                    key=lambda t: t.name
-                )
+                for t in sorted(tour.travelers, key=lambda t: t.name)
             ]
         else:
             self.participants.choices = []
